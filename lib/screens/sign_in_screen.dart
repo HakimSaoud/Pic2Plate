@@ -63,7 +63,10 @@ class SignInScreen extends StatelessWidget {
           const SizedBox(height: 30),
           // Sign In Button
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              // Navigate to HomePage using named route
+              Navigator.pushReplacementNamed(context, '/home');
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF123B42),
               foregroundColor: Colors.white,
@@ -94,8 +97,8 @@ class SignInScreen extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  // Navigate back to the SignUpScreen
-                  Navigator.pop(context);
+                  // Navigate to SignUpScreen using named route
+                  Navigator.pushNamed(context, '/signup');
                 },
                 child: const Text(
                   "Sign Up",
@@ -108,7 +111,6 @@ class SignInScreen extends StatelessWidget {
               ),
             ],
           ),
-
         ],
       ),
     );
