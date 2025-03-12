@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'social_media_button.dart';
 import 'sign_in_screen.dart';
-import 'BaseAuth.dart';
-
+import 'package:untitled/components/BaseAuth.dart';
+import 'package:untitled/components/social_media_button.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
