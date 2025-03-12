@@ -1,4 +1,4 @@
-# untitled
+# Pic2Plate
 
 A new Flutter project.
 
