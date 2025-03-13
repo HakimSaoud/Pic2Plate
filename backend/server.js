@@ -7,30 +7,26 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.PORT || 3000;
 
-// Environment variables
-// Middleware
+require('./dbConnect')
+
+
+// Models 
+const userSchema = require('./models/userSchema');
+const User = mongoose.model('User', userSchema);
+
+
+
+
 app.use(bodyParser.json());
 app.use(cors({
   origin: 'http://localhost:<your-flutter-port>', // Replace with your Flutter app's port
   credentials: true
 }));
 
-// MongoDB Connection
-mongoose.connect("mongodb://localhost:27017/flutter_auth",{})
 
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
 
-// User Schema
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
-});
-
-const User = mongoose.model('User', userSchema);
 
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
@@ -66,7 +62,7 @@ const generateRefreshToken = (user) => {
 // API Endpoints
 
 // Signup
-app.post('/api/signup', async (req, res) => {
+app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -101,7 +97,7 @@ app.post('/api/signup', async (req, res) => {
 });
 
 // Signin
-app.post('/api/signin', async (req, res) => {
+app.post('/signin', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -140,7 +136,7 @@ app.post('/api/signin', async (req, res) => {
 });
 
 // Refresh Token
-app.post('/api/refresh', (req, res) => {
+app.post('/refresh', (req, res) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) return res.sendStatus(401);
@@ -161,7 +157,7 @@ app.post('/api/refresh', (req, res) => {
 });
 
 // Protected Home Route
-app.get('/api/home', authenticateToken, async (req, res) => {
+app.get('/home', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -173,7 +169,7 @@ app.get('/api/home', authenticateToken, async (req, res) => {
 });
 
 // Logout
-app.post('/api/logout', (req, res) => {
+app.post('/logout', (req, res) => {
   // Since refresh tokens are stateless, no action is needed on the server
   res.json({ message: 'Logged out successfully' });
 });
