@@ -17,7 +17,9 @@ class MyApp extends StatelessWidget {
       title: 'Auth Screens',
       theme: ThemeData(
         primarySwatch: Colors.teal,
-        primaryColor: const Color(0xFF123B42), // Consistent with your app's color scheme
+        primaryColor: const Color(
+          0xFF123B42,
+        ), // Consistent with your app's color scheme
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF123B42),
