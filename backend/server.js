@@ -11,40 +11,37 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Import MongoDB connection
 require('./dbConnect');
-
-// Models 
 const User = require('./models/userSchema');
+const Recipe = require('./models/recipeSchema');
 
-// Secret Keys (define them here, before middleware and endpoints)
-const ACCESS_SECRET_KEY = 'ACCESS_SECRET_KEY'; // Replace with a secure key in production
-const REFRESH_SECRET_KEY = 'REFRESH_SECRET_KEY'; // Replace with a secure key in production
+const ACCESS_SECRET_KEY = 'ACCESS_SECRET_KEY';
+const REFRESH_SECRET_KEY = 'REFRESH_SECRET_KEY';
 
 app.use(bodyParser.json());
 app.use(cors({
-  origin: 'http://localhost:55555', // Replace with your Flutter app's port
+  origin: 'http://localhost:55555',
   credentials: true
 }));
 
-// Multer setup for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+    const originalName = file.originalname.toLowerCase();
+    const fileExtension = path.extname(originalName);
+    const baseName = path.basename(originalName, fileExtension);
+    cb(null, `${baseName}-${uniqueSuffix}${fileExtension}`);
   },
 });
 const upload = multer({ storage });
 
-// Ensure uploads directory exists
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
 }
 
-// Authentication Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -58,12 +55,11 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Token Generation
 const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email },
     ACCESS_SECRET_KEY,
-    { expiresIn: '15m' }
+    { expiresIn: '30m' }
   );
 };
 
@@ -75,9 +71,44 @@ const generateRefreshToken = (user) => {
   );
 };
 
-// API Endpoints
+// Simple mapping of labels to ingredients
+const labelToIngredientMap = {
+  'carrot': 'carrot',
+  'apple': 'apple',
+  'orange': 'orange',
+  'banana': 'banana',
+  'tomato': 'tomato',
+  'potato': 'potato',
+  'onion': 'onion',
+  'garlic': 'garlic',
+  'bell pepper': 'bell pepper',
+  'eggplant': 'eggplant',
+  'zucchini': 'zucchini',
+  'olive': 'olive',
+  'chickpea': 'chickpea',
+  'lentil': 'lentil',
+  'beef': 'beef',
+  'chicken': 'chicken',
+  'fish': 'fish',
+  'egg': 'egg',
+};
 
-// Signup
+// Rule-based ingredient prediction (based on file name or manual mapping)
+function predictIngredient(imagePath) {
+  const fileName = path.basename(imagePath).toLowerCase();
+  let ingredient = 'unknown';
+
+  // Check if the file name contains any ingredient keywords
+  for (const [key, value] of Object.entries(labelToIngredientMap)) {
+    if (fileName.includes(key)) {
+      ingredient = value;
+      break;
+    }
+  }
+
+  return ingredient;
+}
+
 app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -105,7 +136,6 @@ app.post('/signup', async (req, res) => {
   }
 });
 
-// Signin
 app.post('/signin', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -139,7 +169,6 @@ app.post('/signin', async (req, res) => {
   }
 });
 
-// Refresh Token
 app.post('/refresh', (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -157,7 +186,6 @@ app.post('/refresh', (req, res) => {
   }
 });
 
-// Protected Home Route
 app.get('/home', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -169,12 +197,10 @@ app.get('/home', authenticateToken, async (req, res) => {
   }
 });
 
-// Logout
 app.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
-// Upload Ingredients Image
 app.post('/upload-ingredients', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
@@ -183,12 +209,15 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const imagePath = req.file.path;
-    user.ingredientsImages.push(imagePath);
+    let ingredient = req.body.ingredient || predictIngredient(imagePath); // Allow user to specify ingredient
+
+    user.ingredientsImages.push({ imagePath, ingredient }); // Store ingredient with image
     await user.save();
 
     res.status(201).json({
       message: 'Image uploaded successfully',
       imagePath: imagePath,
+      ingredient: ingredient,
       userImages: user.ingredientsImages
     });
   } catch (error) {
@@ -196,7 +225,6 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
-
 
 app.post('/remove-ingredient', authenticateToken, async (req, res) => {
   try {
@@ -209,17 +237,14 @@ app.post('/remove-ingredient', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // Check if the imagePath exists in the user's ingredientsImages array
-    const imageIndex = user.ingredientsImages.indexOf(imagePath);
+    const imageIndex = user.ingredientsImages.findIndex(item => item.imagePath === imagePath);
     if (imageIndex === -1) {
       return res.status(404).json({ error: 'Image not found in user\'s ingredients' });
     }
 
-    // Remove the imagePath from the array
     user.ingredientsImages.splice(imageIndex, 1);
     await user.save();
 
-    // Optionally delete the file from the filesystem
     if (fs.existsSync(imagePath)) {
       fs.unlinkSync(imagePath);
       console.log(`Deleted file: ${imagePath}`);
@@ -235,7 +260,79 @@ app.post('/remove-ingredient', authenticateToken, async (req, res) => {
   }
 });
 
-// Start Server
+app.get('/identify-ingredients', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!user.ingredientsImages || user.ingredientsImages.length === 0) {
+      return res.status(400).json({ error: 'No images found for this user' });
+    }
+
+    const identifiedIngredients = user.ingredientsImages.map(item => ({
+      imagePath: item.imagePath,
+      ingredient: item.ingredient !== 'unknown' ? item.ingredient : predictIngredient(item.imagePath)
+    }));
+
+    res.status(200).json({
+      message: 'Ingredients identified successfully',
+      ingredients: identifiedIngredients
+    });
+  } catch (error) {
+    console.error('Identify ingredients error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
+app.get('/recommend-dishes', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!user.ingredientsImages || user.ingredientsImages.length === 0) {
+      return res.status(400).json({ error: 'No images found for this user' });
+    }
+
+    // Identify ingredients
+    const identifiedIngredients = [];
+    for (const item of user.ingredientsImages) {
+      const ingredient = item.ingredient !== 'unknown' ? item.ingredient : predictIngredient(item.imagePath);
+      if (ingredient !== 'unknown') {
+        identifiedIngredients.push(ingredient);
+      }
+    }
+
+    if (identifiedIngredients.length === 0) {
+      return res.status(400).json({ error: 'No recognizable ingredients found' });
+    }
+
+    // Fetch recipes from MongoDB and select only name and recipe fields
+    const recipes = await Recipe.find().select('name recipe ingredients');
+    const recommendedDishes = recipes
+      .filter(recipe => {
+        // Ensure all recipe ingredients are in identifiedIngredients
+        return recipe.ingredients.every(ingredient => identifiedIngredients.includes(ingredient));
+      })
+      .map(recipe => ({
+        name: recipe.name,
+        recipe: recipe.recipe
+      }));
+
+    if (recommendedDishes.length === 0) {
+      return res.status(404).json({ error: 'No Tunisian dishes found that can be made with only these ingredients' });
+    }
+
+    res.status(200).json({
+      message: 'Dishes recommended successfully',
+      userIngredients: identifiedIngredients,
+      recommendedDishes: recommendedDishes
+    });
+  } catch (error) {
+    console.error('Recommend dishes error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
