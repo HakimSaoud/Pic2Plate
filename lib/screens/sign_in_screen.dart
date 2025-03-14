@@ -1,17 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/components/BaseAuth.dart';
+import 'package:untitled/components/base_auth.dart';
+import 'package:untitled/components/base_auth_screen.dart';
 
-class SignInScreen extends StatelessWidget {
+class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
+
+  @override
+  State<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _signIn() async {
+    setState(() => _isLoading = true);
+    final success = await BaseAuth.signIn(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',
+        (Route<dynamic> route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in failed. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BaseAuthScreen(
-      headerText: "Welcome Back",
+      headerText: 'Sign In',
       child: Column(
         children: [
-          // Email field
           TextField(
+            controller: _emailController,
             decoration: InputDecoration(
               hintText: 'EMAIL',
               hintStyle: const TextStyle(
@@ -30,10 +61,11 @@ class SignInScreen extends StatelessWidget {
                 horizontal: 20,
               ),
             ),
+            keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 20),
-          // Password field
           TextField(
+            controller: _passwordController,
             obscureText: true,
             decoration: InputDecoration(
               hintText: 'PASSWORD',
@@ -60,12 +92,8 @@ class SignInScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
-          // Sign In Button
           ElevatedButton(
-            onPressed: () {
-              // Navigate to HomePage using named route
-              Navigator.pushReplacementNamed(context, '/home');
-            },
+            onPressed: _isLoading ? null : _signIn,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF123B42),
               foregroundColor: Colors.white,
@@ -74,33 +102,29 @@ class SignInScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
-              'Sign In',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child:
+                _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                      'Sign In',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
           ),
           const SizedBox(height: 20),
-          // "Don't have an account?" text
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
                 "Don't have an account? ",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
               GestureDetector(
-                onTap: () {
-                  // Navigate to SignUpScreen using named route
-                  Navigator.pushNamed(context, '/signup');
-                },
+                onTap: () => Navigator.pushNamed(context, '/signup'),
                 child: const Text(
-                  "Sign Up",
+                  'Sign Up',
                   style: TextStyle(
                     fontSize: 14,
                     color: Color(0xFF123B42),

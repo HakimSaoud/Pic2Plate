@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/components/BaseAuth.dart';
+import 'package:untitled/components/base_auth.dart';
+import 'package:untitled/components/base_auth_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,23 +11,30 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    await BaseAuth.redirectIfNotAuthenticated(context);
+  }
+
+  void _logout() async {
+    await BaseAuth.logout();
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/signin',
+      (Route<dynamic> route) => false,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BaseAuthScreen(
       headerText: 'Welcome Home',
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Welcome message
-          const Text(
-            'Hello User!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF123B42),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Some content container
           Container(
             padding: const EdgeInsets.all(20),
             margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -35,25 +43,47 @@ class _HomePageState extends State<HomePage> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
-              'This is your home page content. You can add more widgets here!',
+              'Take pictures of your ingredients to store them!',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ),
-          const SizedBox(height: 40),
-          // Logout Button
+          const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: () {
-              // Navigate to SignInScreen and remove all previous routes
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/signin',
-                    (Route<dynamic> route) => false,
-              );
-            },
+            onPressed:
+                () => Navigator.pushNamed(context, '/upload-ingredients'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF123B42),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(180, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Upload Ingredient Picture',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, '/view-ingredients'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF123B42),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(180, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'View Ingredients',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _logout,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF123B42),
               foregroundColor: Colors.white,
@@ -64,20 +94,13 @@ class _HomePageState extends State<HomePage> {
             ),
             child: const Text(
               'Logout',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(height: 20),
-          // Additional info
           const Text(
             'Signed in successfully',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ],
       ),

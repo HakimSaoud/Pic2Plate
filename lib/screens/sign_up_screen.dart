@@ -1,9 +1,67 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/components/BaseAuth.dart';
+import 'package:untitled/components/base_auth.dart';
+import 'package:untitled/components/base_auth_screen.dart';
 import 'package:untitled/components/social_media_button.dart';
 
-class SignUpScreen extends StatelessWidget {
+class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
+
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    if (await BaseAuth.isAuthenticated()) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
+
+  Future<void> _signUp() async {
+    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final success = await BaseAuth.signUp(username, email, password);
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',
+        (Route<dynamic> route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign up failed. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,8 +69,8 @@ class SignUpScreen extends StatelessWidget {
       headerText: "Let's Join",
       child: Column(
         children: [
-          // Username field
           TextField(
+            controller: _usernameController,
             decoration: InputDecoration(
               hintText: 'USERNAME',
               hintStyle: const TextStyle(
@@ -33,8 +91,8 @@ class SignUpScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          // Email field
           TextField(
+            controller: _emailController,
             decoration: InputDecoration(
               hintText: 'EMAIL',
               hintStyle: const TextStyle(
@@ -53,10 +111,11 @@ class SignUpScreen extends StatelessWidget {
                 horizontal: 20,
               ),
             ),
+            keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 20),
-          // Password field
           TextField(
+            controller: _passwordController,
             obscureText: true,
             decoration: InputDecoration(
               hintText: 'PASSWORD',
@@ -83,8 +142,8 @@ class SignUpScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          // Confirm Password field
           TextField(
+            controller: _confirmPasswordController,
             obscureText: true,
             decoration: InputDecoration(
               hintText: 'CONFIRM PASSWORD',
@@ -111,12 +170,8 @@ class SignUpScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
-          // Sign Up Button
           ElevatedButton(
-            onPressed: () {
-              // Navigate to HomePage using named route
-              Navigator.pushReplacementNamed(context, '/home');
-            },
+            onPressed: _isLoading ? null : _signUp,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF123B42),
               foregroundColor: Colors.white,
@@ -125,31 +180,27 @@ class SignUpScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
-              'Sign Up',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child:
+                _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
           ),
           const SizedBox(height: 20),
-          // "Do you have an account?" text
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
                 "Do you have an account? ",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
               GestureDetector(
-                onTap: () {
-                  // Navigate to SignInScreen using named route
-                  Navigator.pushNamed(context, '/signin');
-                },
+                onTap: () => Navigator.pushNamed(context, '/signin'),
                 child: const Text(
                   "Sign In",
                   style: TextStyle(
@@ -162,7 +213,6 @@ class SignUpScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          // Social Media Buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -178,11 +228,7 @@ class SignUpScreen extends StatelessWidget {
                 onPressed: () {},
               ),
               SocialMediaButton(
-                icon: const Icon(
-                  Icons.apple,
-                  color: Colors.black,
-                  size: 30,
-                ),
+                icon: const Icon(Icons.apple, color: Colors.black, size: 30),
                 onPressed: () {},
               ),
               SocialMediaButton(
