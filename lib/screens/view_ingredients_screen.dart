@@ -36,35 +36,36 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
     try {
       final response = await http.get(
         Uri.parse('${BaseAuth.baseUrl}/identify-ingredients'),
-        headers: {
-          'Authorization': 'Bearer ${BaseAuth.getAccessToken()}',
-          'x-refresh-token':
-              BaseAuth.getRefreshToken() ?? '', // Updated to use getter
-        },
+        headers: {'Authorization': 'Bearer ${BaseAuth.getAccessToken()}'},
       );
-      final data = jsonDecode(response.body);
+      print(
+        'Fetch Ingredients Response: ${response.statusCode}, Body: ${response.body}',
+      ); // Debugging
 
       if (response.statusCode == 200) {
-        if (data['newAccessToken']) {
-          BaseAuth.updateTokens(accessToken: data['newAccessToken']);
+        final data = jsonDecode(response.body);
+        if (data['ingredients'] != null) {
+          setState(() {
+            ingredients =
+                (data['ingredients'] as List<dynamic>)
+                    .map(
+                      (item) => {
+                        'imagePath': (item['imagePath'] ?? '').toString(),
+                        'ingredient':
+                            (item['ingredient'] ?? 'unknown').toString(),
+                      },
+                    )
+                    .toList();
+          });
+        } else {
+          setState(() {
+            ingredients = [];
+          });
         }
-        setState(() {
-          ingredients =
-              (data['ingredients'] as List<dynamic>)
-                  .map(
-                    (item) => {
-                      'imagePath': (item['imagePath'] ?? '').toString(),
-                      'ingredient':
-                          (item['ingredient'] ?? 'unknown').toString(),
-                    },
-                  )
-                  .toList();
-        });
       } else {
         setState(() {
           ingredients = [];
-          _errorMessage =
-              'Failed to load ingredients: ${data['error'] ?? 'Unknown error'}';
+          _errorMessage = 'Failed to load ingredients: ${response.body}';
         });
       }
     } catch (e) {
@@ -72,9 +73,11 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
         ingredients = [];
         _errorMessage = 'Error loading ingredients: $e';
       });
-      print('Fetch Ingredients Error: $e');
+      print('Fetch Ingredients Error: $e'); // Debugging
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -85,17 +88,10 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
         headers: {
           'Authorization': 'Bearer ${BaseAuth.getAccessToken()}',
           'Content-Type': 'application/json',
-          'x-refresh-token':
-              BaseAuth.getRefreshToken() ?? '', // Updated to use getter
         },
         body: jsonEncode({'imagePath': imagePath}),
       );
-      final data = jsonDecode(response.body);
-
       if (response.statusCode == 200) {
-        if (data['newAccessToken']) {
-          BaseAuth.updateTokens(accessToken: data['newAccessToken']);
-        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ingredient removed successfully!')),
         );
@@ -103,9 +99,7 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Failed to remove ingredient: ${data['error'] ?? 'Unknown error'}',
-            ),
+            content: Text('Failed to remove ingredient: ${response.body}'),
           ),
         );
       }
@@ -140,7 +134,9 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
                         ),
                       )
                       : SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.4,
+                        height:
+                            MediaQuery.of(context).size.height *
+                            0.4, // Define a bounded height
                         child: ListView.builder(
                           itemCount: ingredients.length,
                           itemBuilder: (context, index) {
