@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { PythonShell } = require('python-shell');
+const { exec } = require('child_process');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -77,9 +77,9 @@ const generateRefreshToken = (user) => {
   return jwt.sign({ id: user._id, email: user.email }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
 };
 
-const { exec } = require('child_process'); // Add this at the top with other requires
+ // Add this at the top with other requires
 
-app.post('/upload-ingredients', authenticateToken, upload.single('image'), async (req, res) => {
+ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     console.log('Received upload request');
     if (!req.file) {
@@ -126,7 +126,6 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
         return res.status(500).json({ error: 'No prediction result returned' });
       }
 
-      // Extract the JSON line from the output
       const jsonLine = output.split('\n').find(line => line.trim().startsWith('{') && line.trim().endsWith('}'));
       if (!jsonLine) {
         console.error('No valid JSON found in output:', output);
@@ -140,9 +139,30 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
       return res.status(500).json({ error: 'Prediction failed', details: err.message });
     }
 
-    const ingredient = result.ingredient;
+    const ingredient = result.ingredient.toLowerCase(); // Normalize to lowercase
     const confidence = result.confidence;
 
+    // Check for duplicate ingredient
+    const existingIngredient = user.ingredientsImages.find(
+      item => item.ingredient.toLowerCase() === ingredient
+    );
+    if (existingIngredient) {
+      console.log(`Ingredient "${ingredient}" already exists in user's list`);
+      // Optionally delete the new uploaded file since it won't be saved
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log(`Deleted duplicate image: ${imagePath}`);
+      }
+      return res.status(200).json({
+        message: `Ingredient "${ingredient}" already exists`,
+        imagePath: existingIngredient.imagePath,
+        ingredient: existingIngredient.ingredient,
+        userImages: user.ingredientsImages,
+        newAccessToken: req.newAccessToken || null,
+      });
+    }
+
+    // If no duplicate, proceed to save
     console.log('Saving to user:', { imagePath, ingredient });
     user.ingredientsImages.push({ imagePath, ingredient });
     await user.save({ maxTimeMS: 5000 });
@@ -162,6 +182,7 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
+
 
 app.get('/identify-ingredients', authenticateToken, async (req, res) => {
   try {
