@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { PythonShell } = require('python-shell'); // Added for Python integration
+const { PythonShell } = require('python-shell');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,7 +15,7 @@ require('./dbConnect');
 const User = require('./models/userSchema');
 const Recipe = require('./models/recipeSchema');
 
-const ACCESS_SECRET_KEY = 'ACCESS_SECRET_KEY'; // Replace with env vars in production
+const ACCESS_SECRET_KEY = 'ACCESS_SECRET_KEY';
 const REFRESH_SECRET_KEY = 'REFRESH_SECRET_KEY';
 
 app.use(bodyParser.json());
@@ -77,78 +77,99 @@ const generateRefreshToken = (user) => {
   return jwt.sign({ id: user._id, email: user.email }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
 };
 
-// Updated /upload-ingredients with Python prediction
-// ... (other imports and setup remain unchanged)
+const { exec } = require('child_process'); // Add this at the top with other requires
 
 app.post('/upload-ingredients', authenticateToken, upload.single('image'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    console.log('Received upload request');
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
 
+    console.log('File uploaded:', req.file.path);
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) {
+      console.log('User not found:', req.user.id);
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     const imagePath = req.file.path;
 
-    const options = {
-      mode: 'text',
-      pythonOptions: ['-u'],
-      scriptPath: './',
-      args: [imagePath]
-    };
+    if (!fs.existsSync(imagePath)) {
+      console.error('Uploaded file not found:', imagePath);
+      return res.status(500).json({ error: 'Uploaded file not found on server' });
+    }
 
-    console.log('Starting Python script execution...'); // Debug log
-    PythonShell.run('predict_ingredient.py', options, async (err, results) => {
-      if (err) {
-        console.error('Python script error:', err);
-        return res.status(500).json({ error: 'Prediction failed', details: err.message });
-      }
+    const pythonCommand = `/Users/macbook/miniconda3/bin/python3.12 predict_ingredient.py "${imagePath}"`;
+    console.log('Executing Python command:', pythonCommand);
 
-      console.log('Python script results:', results); // Debug log
-      if (!results || results.length === 0) {
+    const execPromise = new Promise((resolve, reject) => {
+      exec(pythonCommand, { timeout: 10000 }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Exec error:', error);
+          console.error('Stderr:', stderr);
+          return reject(error);
+        }
+        console.log('Stdout:', stdout);
+        console.log('Stderr:', stderr);
+        resolve(stdout);
+      });
+    });
+
+    let result;
+    try {
+      const output = await execPromise;
+      console.log('Python script output:', output);
+      if (!output) {
+        console.log('No output from Python script');
         return res.status(500).json({ error: 'No prediction result returned' });
       }
 
-      let result;
-      try {
-        result = JSON.parse(results[0]);
-      } catch (parseErr) {
-        console.error('Failed to parse Python result:', parseErr);
-        return res.status(500).json({ error: 'Invalid prediction result format' });
+      // Extract the JSON line from the output
+      const jsonLine = output.split('\n').find(line => line.trim().startsWith('{') && line.trim().endsWith('}'));
+      if (!jsonLine) {
+        console.error('No valid JSON found in output:', output);
+        return res.status(500).json({ error: 'No valid JSON in prediction output' });
       }
 
-      const ingredient = result.ingredient;
-      const confidence = result.confidence;
+      result = JSON.parse(jsonLine);
+      console.log('Parsed result:', result);
+    } catch (err) {
+      console.error('Python execution or parsing error:', err);
+      return res.status(500).json({ error: 'Prediction failed', details: err.message });
+    }
 
-      user.ingredientsImages.push({ imagePath, ingredient });
-      await user.save();
+    const ingredient = result.ingredient;
+    const confidence = result.confidence;
 
-      res.status(201).json({
-        message: 'Image uploaded and ingredient identified successfully',
-        imagePath,
-        ingredient,
-        confidence: confidence.toFixed(2),
-        userImages: user.ingredientsImages,
-        newAccessToken: req.newAccessToken || null,
-      });
+    console.log('Saving to user:', { imagePath, ingredient });
+    user.ingredientsImages.push({ imagePath, ingredient });
+    await user.save({ maxTimeMS: 5000 });
+    console.log('User saved successfully');
+
+    console.log('Sending response to client');
+    res.status(201).json({
+      message: 'Image uploaded and ingredient identified successfully',
+      imagePath,
+      ingredient,
+      confidence: confidence.toFixed(2),
+      userImages: user.ingredientsImages,
+      newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Upload endpoint error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
-// Updated /identify-ingredients to handle empty lists gracefully
 app.get('/identify-ingredients', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     if (!user.ingredientsImages || user.ingredientsImages.length === 0) {
-      return res.status(200).json({
-        message: 'No ingredients found for this user',
-        ingredients: [],
-        newAccessToken: req.newAccessToken || null,
-      });
+      return res.status(400).json({ error: 'No ingredients found for this user' });
     }
 
     const ingredients = user.ingredientsImages.map(item => ({
@@ -167,7 +188,7 @@ app.get('/identify-ingredients', authenticateToken, async (req, res) => {
   }
 });
 
-// Remove Ingredient (unchanged but included for context)
+
 app.post('/remove-ingredient', authenticateToken, async (req, res) => {
   try {
     const { imagePath } = req.body;
@@ -200,7 +221,6 @@ app.post('/remove-ingredient', authenticateToken, async (req, res) => {
   }
 });
 
-// Signup (unchanged)
 app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -226,7 +246,6 @@ app.post('/signup', async (req, res) => {
   }
 });
 
-// Signin (unchanged)
 app.post('/signin', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -256,7 +275,6 @@ app.post('/signin', async (req, res) => {
   }
 });
 
-// Refresh Token (unchanged)
 app.post('/refresh', (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -274,7 +292,6 @@ app.post('/refresh', (req, res) => {
   }
 });
 
-// Home
 app.get('/home', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -286,7 +303,6 @@ app.get('/home', authenticateToken, async (req, res) => {
   }
 });
 
-// Logout (unchanged)
 app.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
