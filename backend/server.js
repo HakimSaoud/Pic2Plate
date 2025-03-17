@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { PythonShell } = require('python-shell'); // Added for Python integration
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -46,7 +47,6 @@ const authenticateToken = async (req, res, next) => {
 
   jwt.verify(token, ACCESS_SECRET_KEY, (err, user) => {
     if (err) {
-      // Token expired or invalid, attempt refresh
       const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
       if (!refreshToken) return res.status(403).json({ error: 'Refresh token required' });
 
@@ -59,7 +59,7 @@ const authenticateToken = async (req, res, next) => {
           { expiresIn: '30m' }
         );
         req.user = decoded;
-        req.newAccessToken = newAccessToken; // Pass new token back to client
+        req.newAccessToken = newAccessToken;
         next();
       });
     } else {
@@ -77,7 +77,9 @@ const generateRefreshToken = (user) => {
   return jwt.sign({ id: user._id, email: user.email }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
 };
 
-// Restricted Routes with Refresh Logic
+// Updated /upload-ingredients with Python prediction
+// ... (other imports and setup remain unchanged)
+
 app.post('/upload-ingredients', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
@@ -86,17 +88,48 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const imagePath = req.file.path;
-    const ingredient = 'unknown';
 
-    user.ingredientsImages.push({ imagePath, ingredient });
-    await user.save();
+    const options = {
+      mode: 'text',
+      pythonOptions: ['-u'],
+      scriptPath: './',
+      args: [imagePath]
+    };
 
-    res.status(201).json({
-      message: 'Image uploaded successfully',
-      imagePath,
-      ingredient,
-      userImages: user.ingredientsImages,
-      newAccessToken: req.newAccessToken || null,
+    console.log('Starting Python script execution...'); // Debug log
+    PythonShell.run('predict_ingredient.py', options, async (err, results) => {
+      if (err) {
+        console.error('Python script error:', err);
+        return res.status(500).json({ error: 'Prediction failed', details: err.message });
+      }
+
+      console.log('Python script results:', results); // Debug log
+      if (!results || results.length === 0) {
+        return res.status(500).json({ error: 'No prediction result returned' });
+      }
+
+      let result;
+      try {
+        result = JSON.parse(results[0]);
+      } catch (parseErr) {
+        console.error('Failed to parse Python result:', parseErr);
+        return res.status(500).json({ error: 'Invalid prediction result format' });
+      }
+
+      const ingredient = result.ingredient;
+      const confidence = result.confidence;
+
+      user.ingredientsImages.push({ imagePath, ingredient });
+      await user.save();
+
+      res.status(201).json({
+        message: 'Image uploaded and ingredient identified successfully',
+        imagePath,
+        ingredient,
+        confidence: confidence.toFixed(2),
+        userImages: user.ingredientsImages,
+        newAccessToken: req.newAccessToken || null,
+      });
     });
   } catch (error) {
     console.error('Upload error:', error);
@@ -104,13 +137,18 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
   }
 });
 
+// Updated /identify-ingredients to handle empty lists gracefully
 app.get('/identify-ingredients', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     if (!user.ingredientsImages || user.ingredientsImages.length === 0) {
-      return res.status(400).json({ error: 'No ingredients found for this user' });
+      return res.status(200).json({
+        message: 'No ingredients found for this user',
+        ingredients: [],
+        newAccessToken: req.newAccessToken || null,
+      });
     }
 
     const ingredients = user.ingredientsImages.map(item => ({
@@ -129,6 +167,7 @@ app.get('/identify-ingredients', authenticateToken, async (req, res) => {
   }
 });
 
+// Remove Ingredient (unchanged but included for context)
 app.post('/remove-ingredient', authenticateToken, async (req, res) => {
   try {
     const { imagePath } = req.body;
@@ -161,7 +200,7 @@ app.post('/remove-ingredient', authenticateToken, async (req, res) => {
   }
 });
 
-// Unchanged Endpoints
+// Signup (unchanged)
 app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -187,6 +226,7 @@ app.post('/signup', async (req, res) => {
   }
 });
 
+// Signin (unchanged)
 app.post('/signin', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -216,6 +256,7 @@ app.post('/signin', async (req, res) => {
   }
 });
 
+// Refresh Token (unchanged)
 app.post('/refresh', (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -233,6 +274,7 @@ app.post('/refresh', (req, res) => {
   }
 });
 
+// Home
 app.get('/home', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -244,6 +286,7 @@ app.get('/home', authenticateToken, async (req, res) => {
   }
 });
 
+// Logout (unchanged)
 app.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });

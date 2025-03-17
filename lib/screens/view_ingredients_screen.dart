@@ -38,30 +38,25 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
         Uri.parse('${BaseAuth.baseUrl}/identify-ingredients'),
         headers: {'Authorization': 'Bearer ${BaseAuth.getAccessToken()}'},
       );
-      print(
-        'Fetch Ingredients Response: ${response.statusCode}, Body: ${response.body}',
-      ); // Debugging
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['ingredients'] != null) {
-          setState(() {
-            ingredients =
-                (data['ingredients'] as List<dynamic>)
-                    .map(
-                      (item) => {
-                        'imagePath': (item['imagePath'] ?? '').toString(),
-                        'ingredient':
-                            (item['ingredient'] ?? 'unknown').toString(),
-                      },
-                    )
-                    .toList();
-          });
-        } else {
-          setState(() {
-            ingredients = [];
-          });
+        if (data['newAccessToken'] != null &&
+            data['newAccessToken'] is String) {
+          BaseAuth.updateTokens(accessToken: data['newAccessToken']);
         }
+        setState(() {
+          ingredients =
+              (data['ingredients'] as List<dynamic>)
+                  .map(
+                    (item) => {
+                      'imagePath': (item['imagePath'] ?? '').toString(),
+                      'ingredient':
+                          (item['ingredient'] ?? 'unknown').toString(),
+                    },
+                  )
+                  .toList();
+        });
       } else {
         setState(() {
           ingredients = [];
@@ -73,11 +68,8 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
         ingredients = [];
         _errorMessage = 'Error loading ingredients: $e';
       });
-      print('Fetch Ingredients Error: $e'); // Debugging
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -92,6 +84,11 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
         body: jsonEncode({'imagePath': imagePath}),
       );
       if (response.statusCode == 200) {
+        if (jsonDecode(response.body)['newAccessToken'] != null) {
+          BaseAuth.updateTokens(
+            accessToken: jsonDecode(response.body)['newAccessToken'],
+          );
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ingredient removed successfully!')),
         );
@@ -134,9 +131,7 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
                         ),
                       )
                       : SizedBox(
-                        height:
-                            MediaQuery.of(context).size.height *
-                            0.4, // Define a bounded height
+                        height: MediaQuery.of(context).size.height * 0.4,
                         child: ListView.builder(
                           itemCount: ingredients.length,
                           itemBuilder: (context, index) {
