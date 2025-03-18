@@ -5,7 +5,7 @@ import 'package:untitled/screens/sign_up_screen.dart';
 import 'package:untitled/screens/home_page.dart';
 import 'package:untitled/screens/upload_ingredients_screen.dart';
 import 'package:untitled/screens/view_ingredients_screen.dart';
-import 'package:untitled/screens/recommendation_screen.dart';
+import 'package:untitled/screens/recommendations_screen.dart';
 
 void main() {
   runApp(const MyApp());

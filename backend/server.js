@@ -310,28 +310,18 @@ app.get('/recommend-recipes', authenticateToken, async (req, res) => {
     }
 
     const userIngredients = user.ingredientsImages.map(item => item.ingredient.toLowerCase());
-    const recipes = await Recipe.find({
-      ingredients: { $in: userIngredients },
-    });
+    const recipes = await Recipe.find();
 
-    const recommendations = recipes.map(recipe => ({
+    const recommendations = recipes.filter(recipe => {
+      const recipeIngredients = recipe.ingredients.map(ing => ing.toLowerCase());
+      // Check if every recipe ingredient is in userIngredients
+      return recipeIngredients.every(ing => userIngredients.includes(ing));
+    }).map(recipe => ({
       name: recipe.name,
       ingredients: recipe.ingredients,
       recipe: recipe.recipe,
       matchedIngredients: recipe.ingredients.filter(ing => userIngredients.includes(ing.toLowerCase())),
     }));
-
-    // Save to user's latestRecommendations (limit to last 5 for history)
-    user.latestRecommendations = recommendations.map(rec => ({
-      name: rec.name,
-      ingredients: rec.ingredients,
-      recipe: rec.recipe,
-      matchedIngredients: rec.matchedIngredients,
-    }));
-    if (user.latestRecommendations.length > 5) {
-      user.latestRecommendations = user.latestRecommendations.slice(-5); // Keep only the latest 5
-    }
-    await user.save();
 
     res.status(200).json({
       message: 'Recommendations retrieved successfully',
@@ -343,6 +333,79 @@ app.get('/recommend-recipes', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
+
+// New endpoint to mark a dish as cooked
+app.post('/mark-cooked', authenticateToken, async (req, res) => {
+  try {
+    const { name, ingredients, recipe, matchedIngredients } = req.body;
+    if (!name || !ingredients || !recipe || !matchedIngredients) {
+      return res.status(400).json({ error: 'All dish details are required' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const cookedDish = {
+      name,
+      ingredients,
+      recipe,
+      matchedIngredients,
+      timestamp: new Date(),
+    };
+
+    user.lastCookedDishes.push(cookedDish);
+    if (user.lastCookedDishes.length > 5) {
+      user.lastCookedDishes = user.lastCookedDishes.slice(-5); // Keep last 5
+    }
+    await user.save();
+
+    res.status(200).json({
+      message: 'Dish marked as cooked',
+      lastCookedDishes: user.lastCookedDishes,
+      newAccessToken: req.newAccessToken || null,
+    });
+  } catch (error) {
+    console.error('Mark cooked error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
+// New endpoint to toggle favorite status
+app.post('/toggle-favorite', authenticateToken, async (req, res) => {
+  try {
+    const { name, ingredients, recipe, matchedIngredients } = req.body;
+    if (!name || !ingredients || !recipe || !matchedIngredients) {
+      return res.status(400).json({ error: 'All dish details are required' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const dish = { name, ingredients, recipe, matchedIngredients };
+    const isFavorited = user.favoriteDishes.some(fav => fav.name === name);
+
+    if (isFavorited) {
+      // Remove if already favorited
+      user.favoriteDishes = user.favoriteDishes.filter(fav => fav.name !== name);
+    } else {
+      // Add only if not already present (redundant check since we toggle, but ensures no duplicates)
+      if (!user.favoriteDishes.some(fav => fav.name === name)) {
+        user.favoriteDishes.push(dish);
+      }
+    }
+    await user.save();
+
+    res.status(200).json({
+      message: isFavorited ? 'Removed from favorites' : 'Added to favorites',
+      favoriteDishes: user.favoriteDishes,
+      newAccessToken: req.newAccessToken || null,
+    });
+  } catch (error) {
+    console.error('Toggle favorite error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 
 app.post('/refresh', (req, res) => {
   try {
@@ -357,6 +420,25 @@ app.post('/refresh', (req, res) => {
     });
   } catch (error) {
     console.error('Refresh token error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
+app.post('/clear-cooked-history', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.lastCookedDishes = []; // Clear the array
+    await user.save();
+
+    res.status(200).json({
+      message: 'Cooked dishes history cleared successfully',
+      lastCookedDishes: user.lastCookedDishes,
+      newAccessToken: req.newAccessToken || null,
+    });
+  } catch (error) {
+    console.error('Clear cooked history error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });

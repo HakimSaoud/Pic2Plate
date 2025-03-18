@@ -8,12 +8,18 @@ const userSchema = new mongoose.Schema({
     imagePath: { type: String },
     ingredient: { type: String, default: 'unknown' }
   }],
-  latestRecommendations: [{
+  lastCookedDishes: [{
     name: { type: String },
     ingredients: [{ type: String }],
     recipe: { type: String },
     matchedIngredients: [{ type: String }],
     timestamp: { type: Date, default: Date.now }
+  }],
+  favoriteDishes: [{
+    name: { type: String },
+    ingredients: [{ type: String }],
+    recipe: { type: String },
+    matchedIngredients: [{ type: String }]
   }]
 });
 
