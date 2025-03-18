@@ -298,7 +298,6 @@ app.post('/signin', async (req, res) => {
 
 app.get('/recommend-recipes', authenticateToken, async (req, res) => {
   try {
-    // Fetch the user and their ingredients
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -310,21 +309,29 @@ app.get('/recommend-recipes', authenticateToken, async (req, res) => {
       });
     }
 
-    // Extract user's ingredients (normalize to lowercase for matching)
     const userIngredients = user.ingredientsImages.map(item => item.ingredient.toLowerCase());
-
-    // Query recipes where at least one ingredient matches
     const recipes = await Recipe.find({
-      ingredients: { $in: userIngredients }, // Match any recipe containing at least one user ingredient
+      ingredients: { $in: userIngredients },
     });
 
-    // Optionally, sort or filter recipes based on match quality
     const recommendations = recipes.map(recipe => ({
       name: recipe.name,
       ingredients: recipe.ingredients,
       recipe: recipe.recipe,
       matchedIngredients: recipe.ingredients.filter(ing => userIngredients.includes(ing.toLowerCase())),
     }));
+
+    // Save to user's latestRecommendations (limit to last 5 for history)
+    user.latestRecommendations = recommendations.map(rec => ({
+      name: rec.name,
+      ingredients: rec.ingredients,
+      recipe: rec.recipe,
+      matchedIngredients: rec.matchedIngredients,
+    }));
+    if (user.latestRecommendations.length > 5) {
+      user.latestRecommendations = user.latestRecommendations.slice(-5); // Keep only the latest 5
+    }
+    await user.save();
 
     res.status(200).json({
       message: 'Recommendations retrieved successfully',

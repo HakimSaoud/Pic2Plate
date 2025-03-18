@@ -7,6 +7,13 @@ const userSchema = new mongoose.Schema({
   ingredientsImages: [{
     imagePath: { type: String },
     ingredient: { type: String, default: 'unknown' }
+  }],
+  latestRecommendations: [{
+    name: { type: String },
+    ingredients: [{ type: String }],
+    recipe: { type: String },
+    matchedIngredients: [{ type: String }],
+    timestamp: { type: Date, default: Date.now }
   }]
 });
 
