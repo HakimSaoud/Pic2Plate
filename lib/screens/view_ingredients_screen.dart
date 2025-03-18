@@ -117,8 +117,13 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
           headerText: 'Your Ingredients',
           child: Center(
             child: Text(
-              _errorMessage!,
-              style: const TextStyle(color: Colors.black),
+              'You Have no ingredients at the moment',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF123B42),
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         )

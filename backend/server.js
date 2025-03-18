@@ -296,6 +296,47 @@ app.post('/signin', async (req, res) => {
   }
 });
 
+app.get('/recommend-recipes', authenticateToken, async (req, res) => {
+  try {
+    // Fetch the user and their ingredients
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!user.ingredientsImages || user.ingredientsImages.length === 0) {
+      return res.status(200).json({
+        message: 'No ingredients available for recommendations',
+        recommendations: [],
+        newAccessToken: req.newAccessToken || null,
+      });
+    }
+
+    // Extract user's ingredients (normalize to lowercase for matching)
+    const userIngredients = user.ingredientsImages.map(item => item.ingredient.toLowerCase());
+
+    // Query recipes where at least one ingredient matches
+    const recipes = await Recipe.find({
+      ingredients: { $in: userIngredients }, // Match any recipe containing at least one user ingredient
+    });
+
+    // Optionally, sort or filter recipes based on match quality
+    const recommendations = recipes.map(recipe => ({
+      name: recipe.name,
+      ingredients: recipe.ingredients,
+      recipe: recipe.recipe,
+      matchedIngredients: recipe.ingredients.filter(ing => userIngredients.includes(ing.toLowerCase())),
+    }));
+
+    res.status(200).json({
+      message: 'Recommendations retrieved successfully',
+      recommendations,
+      newAccessToken: req.newAccessToken || null,
+    });
+  } catch (error) {
+    console.error('Recommend recipes error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 app.post('/refresh', (req, res) => {
   try {
     const { refreshToken } = req.body;
