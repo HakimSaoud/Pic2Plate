@@ -66,7 +66,6 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
         final data = jsonDecode(responseBody);
 
         if (response.statusCode == 201) {
-          // New ingredient added
           if (data['newAccessToken'] != null &&
               data['newAccessToken'] is String) {
             BaseAuth.updateTokens(accessToken: data['newAccessToken']);
@@ -84,7 +83,6 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
           );
           setState(() => _image = null);
         } else if (response.statusCode == 200) {
-          // Duplicate ingredient
           final ingredient = data['ingredient'] ?? 'unknown';
           print('Ingredient already exists: $ingredient');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -122,7 +120,7 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
   @override
   Widget build(BuildContext context) {
     return BaseAuthScreen(
-      headerText: 'Upload Ingredients',
+      headerText: 'Add Ingredients', // Kept your header text
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -206,30 +204,6 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 5,
-              ),
-            ),
-            const SizedBox(height: 20),
-            OutlinedButton(
-              onPressed:
-                  () => Navigator.pushNamed(context, '/view-ingredients'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF123B42),
-                side: const BorderSide(color: Color(0xFF123B42), width: 2),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 15,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'View All Ingredients',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF123B42),
-                ),
               ),
             ),
           ],

@@ -6,6 +6,7 @@ class BaseAuth {
   static const String baseUrl = 'http://localhost:3000';
   static String? _accessToken;
   static String? _refreshToken;
+  static String? _username;
 
   static String? getAccessToken() => _accessToken;
   static String? getRefreshToken() => _refreshToken;
@@ -22,6 +23,8 @@ class BaseAuth {
     String username,
     String email,
     String password,
+
+    // Add this field
   ) async {
     try {
       final response = await http.post(
@@ -33,12 +36,19 @@ class BaseAuth {
           'password': password,
         }),
       );
-      return response.statusCode == 201;
+      if (response.statusCode == 201) {
+        _username = username;
+        return true;
+      } else {
+        return false;
+      }
     } catch (e) {
       print('SignUp Error: $e');
       return false;
     }
   }
+
+  static String? getUsername() => _username;
 
   static Future<bool> signIn(String email, String password) async {
     try {
@@ -51,6 +61,7 @@ class BaseAuth {
         final data = jsonDecode(response.body);
         _accessToken = data['accessToken'];
         _refreshToken = data['refreshToken'];
+        _username = 'Hey, ' + data['user']['username'];
         return true;
       }
       return false;

@@ -107,84 +107,68 @@ class _ViewIngredientsScreenState extends State<ViewIngredientsScreen> {
     }
   }
 
+  // Inside ViewIngredientsScreen
   @override
   Widget build(BuildContext context) {
-    return BaseAuthScreen(
-      headerText: 'Your Ingredients',
-      child:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _errorMessage != null
-              ? Center(
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              )
-              : Column(
-                children: [
-                  ingredients.isEmpty
-                      ? const Center(
-                        child: Text(
-                          'No ingredients added yet.',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      )
-                      : SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.4,
-                        child: ListView.builder(
-                          itemCount: ingredients.length,
-                          itemBuilder: (context, index) {
-                            final item = ingredients[index];
-                            final imagePath = item['imagePath']!;
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 8.0),
-                              child: ListTile(
-                                leading: Image.network(
-                                  '${BaseAuth.baseUrl}/$imagePath',
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (context, error, stackTrace) =>
-                                          const Icon(Icons.error),
-                                ),
-                                title: Text(item['ingredient']!),
-                                trailing: IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () => _removeIngredient(imagePath),
-                                ),
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _errorMessage != null
+        ? BaseAuthScreen(
+          headerText: 'Your Ingredients',
+          child: Center(
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.black),
+            ),
+          ),
+        )
+        : BaseAuthScreen(
+          headerText: 'Your Ingredients',
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                ingredients.isEmpty
+                    ? const Center(
+                      child: Text(
+                        'No ingredients added yet.',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    )
+                    : Expanded(
+                      child: ListView.builder(
+                        itemCount: ingredients.length,
+                        itemBuilder: (context, index) {
+                          final item = ingredients[index];
+                          final imagePath = item['imagePath']!;
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ListTile(
+                              leading: Image.network(
+                                '${BaseAuth.baseUrl}/$imagePath',
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (context, error, stackTrace) =>
+                                        const Icon(Icons.error),
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed:
-                        () =>
-                            Navigator.pushNamed(context, '/upload-ingredients'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF123B42),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(180, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                              title: Text(item['ingredient']!),
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _removeIngredient(imagePath),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    child: const Text(
-                      'Add More Ingredients',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-    );
+              ],
+            ),
+          ),
+        );
   }
 }
