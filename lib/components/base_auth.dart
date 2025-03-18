@@ -3,11 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class BaseAuth {
-  // Use 'http://10.0.2.2:3000' for Android emulator, or your Mac's IP for physical device
-  static const String baseUrl =
-      'http://localhost:3000'; // Default for simulator
-  // static const String baseUrl = 'http://10.0.2.2:3000'; // Uncomment for Android emulator
-  // static const String baseUrl = 'http://192.168.1.x:3000'; // Uncomment and replace with your Mac's IP for physical device
+  static const String baseUrl = 'http://localhost:3000';
   static String? _accessToken;
   static String? _refreshToken;
 
