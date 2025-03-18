@@ -5,7 +5,7 @@ import 'package:untitled/components/base_auth.dart';
 import 'package:untitled/screens/upload_ingredients_screen.dart';
 import 'package:untitled/screens/view_ingredients_screen.dart';
 import 'package:untitled/screens/recommendations_screen.dart';
-import 'package:untitled/screens/recipe_details_screen.dart'; // Import the new screen
+import 'package:untitled/screens/recipe_details_screen.dart';
 import 'package:untitled/components/base_auth_screen.dart';
 
 class HomePage extends StatefulWidget {
