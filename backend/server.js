@@ -9,7 +9,7 @@ const path = require('path');
 const { exec } = require('child_process');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.PORT || 3000;
 
 require('./dbConnect');
 const User = require('./models/userSchema');
@@ -19,6 +19,8 @@ const ACCESS_SECRET_KEY = 'ACCESS_SECRET_KEY';
 const REFRESH_SECRET_KEY = 'REFRESH_SECRET_KEY';
 
 app.use(bodyParser.json());
+
+
 app.use(cors({
   origin: 'http://localhost:55555',
   credentials: true
@@ -56,7 +58,7 @@ const authenticateToken = async (req, res, next) => {
         const newAccessToken = jwt.sign(
           { id: decoded.id, email: decoded.email },
           ACCESS_SECRET_KEY,
-          { expiresIn: '30m' }
+          { expiresIn: '15d' }
         );
         req.user = decoded;
         req.newAccessToken = newAccessToken;
@@ -315,7 +317,7 @@ app.get('/recommend-recipes', authenticateToken, async (req, res) => {
     const recommendations = recipes.filter(recipe => {
       const recipeIngredients = recipe.ingredients.map(ing => ing.toLowerCase());
       // Check if every recipe ingredient is in userIngredients
-      return recipeIngredients.every(ing => userIngredients.includes(ing));
+      return recipeIngredients.some(ing => userIngredients.includes(ing));
     }).map(recipe => ({
       name: recipe.name,
       ingredients: recipe.ingredients,

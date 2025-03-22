@@ -233,7 +233,7 @@ class _HomePageState extends State<HomePage> {
     return BaseAuthScreen(
       headerText: 'Welcome Home',
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               ElevatedButton.icon(
                 onPressed:
                     _isFetchingRecommendations ? null : _fetchRecommendations,
@@ -303,13 +303,13 @@ class _HomePageState extends State<HomePage> {
                   elevation: 5,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               if (_recommendationError != null)
                 Text(
                   _recommendationError!,
                   style: const TextStyle(color: Colors.red),
                 ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               if (recommendations.isNotEmpty) ...[
                 const Text(
                   'Recommended Dishes',
@@ -319,10 +319,10 @@ class _HomePageState extends State<HomePage> {
                     color: Color(0xFF123B42),
                   ),
                 ),
-
                 SizedBox(
-                  height: 200,
+                  height: 150,
                   child: ListView.builder(
+                    padding: EdgeInsets.zero, // Remove default padding
                     itemCount: recommendations.length,
                     itemBuilder: (context, index) {
                       final rec = recommendations[index];
@@ -330,7 +330,7 @@ class _HomePageState extends State<HomePage> {
                         (fav) => fav['name'] == rec['name'],
                       );
                       return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 5),
+                        margin: const EdgeInsets.symmetric(vertical: 2),
                         child: InkWell(
                           onTap: () {
                             Navigator.push(
@@ -343,6 +343,7 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                           child: ListTile(
+                            contentPadding: const EdgeInsets.all(8),
                             title: Text(
                               rec['name'],
                               style: const TextStyle(
@@ -365,6 +366,7 @@ class _HomePageState extends State<HomePage> {
                                         : Icons.favorite_border,
                                     color:
                                         isFavorited ? Colors.red : Colors.grey,
+                                    size: 20,
                                   ),
                                   onPressed: () => _toggleFavorite(rec),
                                 ),
@@ -372,6 +374,7 @@ class _HomePageState extends State<HomePage> {
                                   icon: const Icon(
                                     Icons.check,
                                     color: Colors.green,
+                                    size: 20,
                                   ),
                                   onPressed: () => _markAsCooked(rec),
                                 ),
@@ -384,7 +387,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               const Text(
                 'Favorite Dishes',
                 style: TextStyle(
@@ -393,21 +396,34 @@ class _HomePageState extends State<HomePage> {
                   color: Color(0xFF123B42),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               favoriteDishes.isEmpty
                   ? const Text(
                     'No favorite dishes yet.',
                     style: TextStyle(color: Colors.grey),
                   )
-                  : SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      itemCount: favoriteDishes.length,
-                      itemBuilder: (context, index) {
-                        final fav = favoriteDishes[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 5),
+                  : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: favoriteDishes.length,
+                    itemBuilder: (context, index) {
+                      final fav = favoriteDishes[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        RecipeDetailsScreen(recipe: fav),
+                              ),
+                            );
+                          },
                           child: ListTile(
+                            contentPadding: const EdgeInsets.all(8),
                             title: Text(
                               fav['name'],
                               style: const TextStyle(
@@ -421,15 +437,19 @@ class _HomePageState extends State<HomePage> {
                               style: const TextStyle(color: Colors.green),
                             ),
                             trailing: IconButton(
-                              icon: const Icon(Icons.close, color: Colors.red),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.red,
+                                size: 20,
+                              ),
                               onPressed: () => _toggleFavorite(fav),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -454,21 +474,34 @@ class _HomePageState extends State<HomePage> {
                     ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               lastCookedDishes.isEmpty
                   ? const Text(
                     'No dishes cooked yet.',
                     style: TextStyle(color: Colors.grey),
                   )
-                  : SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      itemCount: lastCookedDishes.length,
-                      itemBuilder: (context, index) {
-                        final cooked = lastCookedDishes[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 5),
+                  : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: lastCookedDishes.length,
+                    itemBuilder: (context, index) {
+                      final cooked = lastCookedDishes[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        RecipeDetailsScreen(recipe: cooked),
+                              ),
+                            );
+                          },
                           child: ListTile(
+                            contentPadding: const EdgeInsets.all(8),
                             title: Text(
                               cooked['name'],
                               style: const TextStyle(
@@ -482,9 +515,9 @@ class _HomePageState extends State<HomePage> {
                               style: const TextStyle(color: Colors.grey),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
             ],
           ),
