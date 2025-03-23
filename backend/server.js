@@ -316,7 +316,6 @@ app.get('/recommend-recipes', authenticateToken, async (req, res) => {
 
     const recommendations = recipes.filter(recipe => {
       const recipeIngredients = recipe.ingredients.map(ing => ing.toLowerCase());
-      // Check if every recipe ingredient is in userIngredients
       return recipeIngredients.some(ing => userIngredients.includes(ing));
     }).map(recipe => ({
       name: recipe.name,

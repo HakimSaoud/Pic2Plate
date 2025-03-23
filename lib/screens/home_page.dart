@@ -6,6 +6,7 @@ import 'package:untitled/screens/upload_ingredients_screen.dart';
 import 'package:untitled/screens/view_ingredients_screen.dart';
 import 'package:untitled/screens/recommendations_screen.dart';
 import 'package:untitled/screens/recipe_details_screen.dart';
+import 'package:untitled/screens/account_settings_screen.dart';
 import 'package:untitled/components/base_auth_screen.dart';
 
 class HomePage extends StatefulWidget {
@@ -35,23 +36,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _logout() async {
-    await BaseAuth.logout();
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/signin',
-      (Route<dynamic> route) => false,
-    );
-  }
-
   void _onItemTapped(int index) {
-    if (index == 4) {
-      _logout();
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   Future<void> _fetchRecommendations() async {
@@ -224,6 +212,8 @@ class _HomePageState extends State<HomePage> {
         return const ViewIngredientsScreen();
       case 3:
         return const RecommendationsScreen();
+      case 4:
+        return const AccountSettingsScreen(); // Add the new screen
       default:
         return _buildHomeContent();
     }
@@ -260,9 +250,16 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.logout, color: Color(0xFF123B42)),
-                    onPressed: _logout,
-                    tooltip: 'Logout',
+                    icon: const Icon(
+                      Icons.settings,
+                      color: Color(0xFF123B42),
+                    ), // Replace logout with settings icon
+                    onPressed: () {
+                      setState(() {
+                        _selectedIndex = 4; // Navigate to Account Settings
+                      });
+                    },
+                    tooltip: 'Account Settings',
                   ),
                 ],
               ),
@@ -322,7 +319,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(
                   height: 150,
                   child: ListView.builder(
-                    padding: EdgeInsets.zero, // Remove default padding
+                    padding: EdgeInsets.zero,
                     itemCount: recommendations.length,
                     itemBuilder: (context, index) {
                       final rec = recommendations[index];
@@ -544,7 +541,10 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.recommend),
               label: 'Recommendations',
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings), // Replace logout with settings
+              label: 'Settings',
+            ),
           ],
           currentIndex: _selectedIndex,
           selectedItemColor: Colors.white,
