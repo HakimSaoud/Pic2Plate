@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class BaseAuth {
+  //static  const String baseUrl = 'http://192.168.100.40:3000';
   static const String baseUrl = 'http://localhost:3000';
   static String? _accessToken;
   static String? _refreshToken;

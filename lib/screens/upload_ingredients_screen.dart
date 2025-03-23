@@ -29,8 +29,8 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
     await BaseAuth.redirectIfNotAuthenticated(context);
   }
 
-  Future<void> _pickAndUploadImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         _image = pickedFile;
@@ -120,7 +120,7 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
   @override
   Widget build(BuildContext context) {
     return BaseAuthScreen(
-      headerText: 'Add Ingredients', // Kept your header text
+      headerText: 'Add Ingredients',
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -173,38 +173,92 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
                       ),
             ),
             const SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: _isUploading ? null : _pickAndUploadImage,
-              icon:
-                  _isUploading
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                      : const Icon(Icons.upload, color: Colors.white),
-              label: Text(
-                _isUploading ? 'Uploading...' : 'Upload Picture',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Flexible(
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        _isUploading
+                            ? null
+                            : () => _pickAndUploadImage(ImageSource.camera),
+                    icon:
+                        _isUploading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : const Icon(Icons.camera_alt, color: Colors.white),
+                    label: Text(
+                      _isUploading ? 'Uploading...' : 'Take Photo',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF123B42),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10, // Reduced padding
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 5,
+                    ),
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF123B42),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 15,
+                const SizedBox(width: 10), // Add spacing between buttons
+                Flexible(
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        _isUploading
+                            ? null
+                            : () => _pickAndUploadImage(ImageSource.gallery),
+                    icon:
+                        _isUploading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : const Icon(
+                              Icons.photo_library,
+                              color: Colors.white,
+                            ),
+                    label: Text(
+                      _isUploading ? 'Uploading...' : 'From Gallery',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF123B42),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10, // Reduced padding
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 5,
+                    ),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 5,
-              ),
+              ],
             ),
           ],
         ),
