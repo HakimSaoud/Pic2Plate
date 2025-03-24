@@ -37,6 +37,9 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if the keyboard is open by inspecting viewInsets.bottom
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus(); // Dismiss keyboard on tap outside
@@ -44,8 +47,11 @@ class _SignInScreenState extends State<SignInScreen> {
       child: BaseAuthScreen(
         headerText: 'Sign In',
         child: SingleChildScrollView(
+          // Enable scrolling only when the keyboard is open
           physics:
-              const ClampingScrollPhysics(), // Prevents excessive scrolling
+              isKeyboardOpen
+                  ? const ClampingScrollPhysics()
+                  : const NeverScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
@@ -165,7 +171,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20), // Extra padding at bottom
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
