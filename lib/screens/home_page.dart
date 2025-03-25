@@ -213,17 +213,27 @@ class _HomePageState extends State<HomePage> {
       case 3:
         return const RecommendationsScreen();
       case 4:
-        return const AccountSettingsScreen(); // Add the new screen
+        return const AccountSettingsScreen();
       default:
         return _buildHomeContent();
     }
   }
 
   Widget _buildHomeContent() {
+    // Calculate responsive font sizes and padding based on screen width
+    final screenWidth = MediaQuery.of(context).size.width;
+    const referenceWidth = 375.0; // Reference width (e.g., iPhone 11)
+    const baseFontSize = 16.0; // Base font size for reference width
+    final responsiveFontSize = (screenWidth / referenceWidth) * baseFontSize;
+    final fontSize = responsiveFontSize.clamp(12.0, 18.0); // Clamp font size
+    final paddingHorizontal = screenWidth < 360 ? 16.0 : 20.0; // Adjust padding
+    final listTilePadding =
+        screenWidth < 360 ? 6.0 : 8.0; // Adjust ListTile padding
+
     return BaseAuthScreen(
       headerText: 'Welcome Home',
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+        padding: EdgeInsets.symmetric(vertical: 10),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,29 +241,32 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 20,
+                    radius: screenWidth < 360 ? 16 : 20,
                     backgroundColor: const Color(0xFF123B42),
-                    child: const Icon(
+                    child: Icon(
                       Icons.person,
                       color: Colors.white,
-                      size: 24,
+                      size: screenWidth < 360 ? 20 : 24,
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    BaseAuth.getUsername() ?? 'User',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF123B42),
+                  Expanded(
+                    child: Text(
+                      BaseAuth.getUsername() ?? 'User',
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF123B42),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.settings,
-                      color: Color(0xFF123B42),
-                    ), // Replace logout with settings icon
+                      color: const Color(0xFF123B42),
+                      size: screenWidth < 360 ? 20 : 24,
+                    ),
                     onPressed: () {
                       setState(() {
                         _selectedIndex = 4; // Navigate to Account Settings
@@ -264,140 +277,164 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed:
-                    _isFetchingRecommendations ? null : _fetchRecommendations,
-                icon:
-                    _isFetchingRecommendations
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                        : const Icon(Icons.recommend, color: Colors.white),
-                label: Text(
-                  _isFetchingRecommendations
-                      ? 'Fetching...'
-                      : 'Get a Recommendation',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed:
+                        _isFetchingRecommendations
+                            ? null
+                            : _fetchRecommendations,
+                    icon:
+                        _isFetchingRecommendations
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : const Icon(Icons.recommend, color: Colors.white),
+                    label: Text(
+                      _isFetchingRecommendations
+                          ? 'Fetching...'
+                          : 'Get a Recommendation',
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF123B42),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth < 360 ? 16 : 20,
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 5,
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF123B42),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 15,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 5,
-                ),
+                  const SizedBox(height: 10),
+                  if (_recommendationError != null)
+                    Text(
+                      _recommendationError!,
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: fontSize * 0.9,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  const SizedBox(height: 10),
+                  if (recommendations.isNotEmpty) ...[
+                    Text(
+                      'Recommended Dishes',
+                      style: TextStyle(
+                        fontSize: fontSize * 1.1,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF123B42),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 150,
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: recommendations.length,
+                        itemBuilder: (context, index) {
+                          final rec = recommendations[index];
+                          final isFavorited = favoriteDishes.any(
+                            (fav) => fav['name'] == rec['name'],
+                          );
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 2),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) =>
+                                            RecipeDetailsScreen(recipe: rec),
+                                  ),
+                                );
+                              },
+                              child: ListTile(
+                                contentPadding: EdgeInsets.all(listTilePadding),
+                                title: Text(
+                                  rec['name'],
+                                  style: TextStyle(
+                                    fontSize: fontSize,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF123B42),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  'Matched: ${rec['matchedIngredients'].join(', ')}',
+                                  style: const TextStyle(color: Colors.green),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        isFavorited
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color:
+                                            isFavorited
+                                                ? Colors.red
+                                                : Colors.grey,
+                                        size: screenWidth < 360 ? 18 : 20,
+                                      ),
+                                      onPressed: () => _toggleFavorite(rec),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.check,
+                                        color: Colors.green,
+                                        size: screenWidth < 360 ? 18 : 20,
+                                      ),
+                                      onPressed: () => _markAsCooked(rec),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 10),
-              if (_recommendationError != null)
-                Text(
-                  _recommendationError!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              const SizedBox(height: 10),
-              if (recommendations.isNotEmpty) ...[
-                const Text(
-                  'Recommended Dishes',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF123B42),
-                  ),
-                ),
-                SizedBox(
-                  height: 150,
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: recommendations.length,
-                    itemBuilder: (context, index) {
-                      final rec = recommendations[index];
-                      final isFavorited = favoriteDishes.any(
-                        (fav) => fav['name'] == rec['name'],
-                      );
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) =>
-                                        RecipeDetailsScreen(recipe: rec),
-                              ),
-                            );
-                          },
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(8),
-                            title: Text(
-                              rec['name'],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF123B42),
-                              ),
-                            ),
-                            subtitle: Text(
-                              'Matched: ${rec['matchedIngredients'].join(', ')}',
-                              style: const TextStyle(color: Colors.green),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    isFavorited
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color:
-                                        isFavorited ? Colors.red : Colors.grey,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _toggleFavorite(rec),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check,
-                                    color: Colors.green,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _markAsCooked(rec),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-              const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Favorite Dishes',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: fontSize * 1.1,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF123B42),
+                  color: const Color(0xFF123B42),
                 ),
               ),
               const SizedBox(height: 5),
               favoriteDishes.isEmpty
-                  ? const Text(
+                  ? Text(
                     'No favorite dishes yet.',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: fontSize * 0.9,
+                    ),
                   )
                   : ListView.builder(
                     shrinkWrap: true,
@@ -420,26 +457,30 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                           child: ListTile(
-                            contentPadding: const EdgeInsets.all(8),
+                            contentPadding: EdgeInsets.all(listTilePadding),
                             title: Text(
                               fav['name'],
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: TextStyle(
+                                fontSize: fontSize,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF123B42),
+                                color: const Color(0xFF123B42),
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             subtitle: Text(
                               'Matched: ${fav['matchedIngredients'].join(', ')}',
                               style: const TextStyle(color: Colors.green),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             trailing: IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.close,
                                 color: Colors.red,
-                                size: 20,
+                                size: screenWidth < 360 ? 18 : 20,
                               ),
                               onPressed: () => _toggleFavorite(fav),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
                           ),
                         ),
@@ -450,32 +491,37 @@ class _HomePageState extends State<HomePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Last Cooked Dishes',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: fontSize * 1.1,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF123B42),
+                      color: const Color(0xFF123B42),
                     ),
                   ),
                   if (lastCookedDishes.isNotEmpty)
                     TextButton(
                       onPressed: _clearCookedHistory,
-                      child: const Text(
+                      child: Text(
                         'Clear History',
                         style: TextStyle(
-                          color: Color(0xFF123B42),
+                          color: const Color(0xFF123B42),
                           fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                 ],
               ),
               const SizedBox(height: 5),
               lastCookedDishes.isEmpty
-                  ? const Text(
+                  ? Text(
                     'No dishes cooked yet.',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: fontSize * 0.9,
+                    ),
                   )
                   : ListView.builder(
                     shrinkWrap: true,
@@ -498,18 +544,23 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                           child: ListTile(
-                            contentPadding: const EdgeInsets.all(8),
+                            contentPadding: EdgeInsets.all(listTilePadding),
                             title: Text(
                               cooked['name'],
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: TextStyle(
+                                fontSize: fontSize,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF123B42),
+                                color: const Color(0xFF123B42),
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             subtitle: Text(
                               'Cooked on: ${cooked['timestamp'].substring(0, 10)}',
-                              style: const TextStyle(color: Colors.grey),
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: fontSize * 0.9,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
@@ -542,7 +593,7 @@ class _HomePageState extends State<HomePage> {
               label: 'Recommendations',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings), // Replace logout with settings
+              icon: Icon(Icons.settings),
               label: 'Settings',
             ),
           ],
