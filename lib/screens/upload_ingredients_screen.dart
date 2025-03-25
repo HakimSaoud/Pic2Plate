@@ -196,7 +196,7 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
                     label: Text(
                       _isUploading ? 'Uploading...' : 'Take Photo',
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
@@ -239,7 +239,7 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
                     label: Text(
                       _isUploading ? 'Uploading...' : 'From Gallery',
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
