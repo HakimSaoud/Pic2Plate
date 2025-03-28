@@ -220,13 +220,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHomeContent() {
-    // Calculate responsive font sizes and padding based on screen width
     final screenWidth = MediaQuery.of(context).size.width;
     const referenceWidth = 375.0; // Reference width (e.g., iPhone 11)
     const baseFontSize = 16.0; // Base font size for reference width
     final responsiveFontSize = (screenWidth / referenceWidth) * baseFontSize;
     final fontSize = responsiveFontSize.clamp(12.0, 18.0); // Clamp font size
-    final paddingHorizontal = screenWidth < 360 ? 16.0 : 20.0; // Adjust padding
     final listTilePadding =
         screenWidth < 360 ? 6.0 : 8.0; // Adjust ListTile padding
 
