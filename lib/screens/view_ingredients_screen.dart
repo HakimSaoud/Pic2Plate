@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:untitled/components/base_auth.dart';
+import 'package:untitled/components/base_auth_screen.dart';
 
 class ViewIngredientsScreen extends StatefulWidget {
   const ViewIngredientsScreen({super.key});
