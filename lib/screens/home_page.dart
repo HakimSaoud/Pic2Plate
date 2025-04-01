@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> favoriteDishes = [];
   bool _isFetchingRecommendations = false;
   String? _recommendationError;
-  bool _showFullHistory = false;
+  bool _showFullHistory = false; // Toggle for showing full history
 
   @override
   void initState() {
@@ -187,6 +187,7 @@ class _HomePageState extends State<HomePage> {
         }
         setState(() {
           lastCookedDishes = data['lastCookedDishes'] ?? [];
+          _showFullHistory = false; // Reset to hide history after clearing
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cooked history cleared successfully')),
@@ -200,6 +201,38 @@ class _HomePageState extends State<HomePage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error clearing history: $e')));
+    }
+  }
+
+  Future<void> _removeCookedDish(String dishName) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${BaseAuth.baseUrl}/remove-cooked-dish'),
+        headers: {
+          'Authorization': 'Bearer ${BaseAuth.getAccessToken()}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'name': dishName}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['newAccessToken'] != null &&
+            data['newAccessToken'] is String) {
+          BaseAuth.updateTokens(accessToken: data['newAccessToken']);
+        }
+        setState(() {
+          lastCookedDishes = data['lastCookedDishes'] ?? lastCookedDishes;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to remove dish: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error removing dish: $e')));
     }
   }
 
@@ -232,7 +265,7 @@ class _HomePageState extends State<HomePage> {
     return BaseAuthScreen(
       headerText: 'Welcome Home',
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,15 +533,18 @@ class _HomePageState extends State<HomePage> {
                   ),
                   if (lastCookedDishes.isNotEmpty)
                     TextButton(
-                      onPressed: _clearCookedHistory,
+                      onPressed: () {
+                        setState(() {
+                          _showFullHistory = !_showFullHistory;
+                        });
+                      },
                       child: Text(
-                        'Clear History',
+                        _showFullHistory ? 'Hide History' : 'Show All History',
                         style: TextStyle(
                           color: const Color(0xFF123B42),
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                 ],
@@ -522,49 +558,113 @@ class _HomePageState extends State<HomePage> {
                       fontSize: fontSize * 0.9,
                     ),
                   )
-                  : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: lastCookedDishes.length,
-                    itemBuilder: (context, index) {
-                      final cooked = lastCookedDishes[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) =>
-                                        RecipeDetailsScreen(recipe: cooked),
+                  : _showFullHistory
+                  ? Column(
+                    children: [
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: lastCookedDishes.length,
+                        itemBuilder: (context, index) {
+                          final cooked = lastCookedDishes[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 2),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) =>
+                                            RecipeDetailsScreen(recipe: cooked),
+                                  ),
+                                );
+                              },
+                              child: ListTile(
+                                contentPadding: EdgeInsets.all(listTilePadding),
+                                title: Text(
+                                  cooked['name'],
+                                  style: TextStyle(
+                                    fontSize: fontSize,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF123B42),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  'Cooked on: ${cooked['timestamp'].substring(0, 10)}',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: fontSize * 0.9,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: IconButton(
+                                  icon: Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: screenWidth < 360 ? 18 : 20,
+                                  ),
+                                  onPressed:
+                                      () => _removeCookedDish(cooked['name']),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
                               ),
-                            );
-                          },
-                          child: ListTile(
-                            contentPadding: EdgeInsets.all(listTilePadding),
-                            title: Text(
-                              cooked['name'],
-                              style: TextStyle(
-                                fontSize: fontSize,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF123B42),
-                              ),
-                              overflow: TextOverflow.ellipsis,
                             ),
-                            subtitle: Text(
-                              'Cooked on: ${cooked['timestamp'].substring(0, 10)}',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: fontSize * 0.9,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: _clearCookedHistory,
+                        child: Text(
+                          'Clear All History',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ],
+                  )
+                  : Card(
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => RecipeDetailsScreen(
+                                  recipe: lastCookedDishes.last,
+                                ),
+                          ),
+                        );
+                      },
+                      child: ListTile(
+                        contentPadding: EdgeInsets.all(listTilePadding),
+                        title: Text(
+                          lastCookedDishes.last['name'],
+                          style: TextStyle(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF123B42),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          'Cooked on: ${lastCookedDishes.last['timestamp'].substring(0, 10)}',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: fontSize * 0.9,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
                   ),
             ],
           ),
