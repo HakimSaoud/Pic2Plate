@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:untitled/components/base_auth.dart';
 import 'package:untitled/components/base_auth_screen.dart';
+import 'package:untitled/components/custom_snackbar.dart';
 
 class UploadIngredientsScreen extends StatefulWidget {
   const UploadIngredientsScreen({super.key});
@@ -29,64 +30,14 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
     await BaseAuth.redirectIfNotAuthenticated(context);
   }
 
-  void _showCustomSnackBar(String message, {bool isSuccess = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors:
-                  isSuccess
-                      ? [Colors.green.shade700, Colors.green.shade400]
-                      : [Colors.red.shade700, Colors.red.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isSuccess ? Icons.check_circle : Icons.error,
-                color: Colors.white,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      ),
-    );
-  }
-
   Future<void> _pickAndUploadImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile == null) {
-      _showCustomSnackBar('No image selected', isSuccess: false);
+      SnackBarUtils.showCustomSnackBar(
+        context,
+        'No image selected',
+        isSuccess: false,
+      );
       return;
     }
 
@@ -120,21 +71,26 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
         }
         final ingredient = data['ingredient'] ?? 'unknown';
         final confidence = data['confidence'] ?? '0.00';
-        _showCustomSnackBar('Identified: $ingredient ($confidence%)');
+        SnackBarUtils.showCustomSnackBar(
+          context,
+          'Identified: $ingredient ($confidence%)',
+        );
         setState(() => _image = null);
       } else if (response.statusCode == 200) {
         final ingredient = data['ingredient'] ?? 'unknown';
-        _showCustomSnackBar('$ingredient already exists');
+        SnackBarUtils.showCustomSnackBar(context, '$ingredient already exists');
         setState(() => _image = null);
       } else {
-        _showCustomSnackBar(
-          'Upload failed: ${data['error'] ?? 'Something went wrong'}',
+        SnackBarUtils.showCustomSnackBar(
+          context,
+          'Failed to upload ingredient. Please try again.',
           isSuccess: false,
         );
       }
     } catch (e) {
-      _showCustomSnackBar(
-        'Upload failed due to a network issue',
+      SnackBarUtils.showCustomSnackBar(
+        context,
+        'Failed to upload due to a network issue.',
         isSuccess: false,
       );
     } finally {
