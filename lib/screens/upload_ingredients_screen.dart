@@ -73,8 +73,8 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
             ],
           ),
         ),
-        backgroundColor: Colors.transparent, // Transparent to show gradient
-        elevation: 0, // No additional elevation (handled by shadow)
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
