@@ -8,6 +8,7 @@ import 'package:untitled/screens/recommendations_screen.dart';
 import 'package:untitled/screens/recipe_details_screen.dart';
 import 'package:untitled/screens/account_settings_screen.dart';
 import 'package:untitled/components/base_auth_screen.dart';
+import 'package:untitled/components/custom_snackbar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -66,13 +67,12 @@ class _HomePageState extends State<HomePage> {
         });
       } else {
         setState(() {
-          _recommendationError =
-              'Failed to fetch recommendations: ${response.body}';
+          _recommendationError = 'Failed to fetch recommendations.';
         });
       }
     } catch (e) {
       setState(() {
-        _recommendationError = 'Error fetching recommendations: $e';
+        _recommendationError = 'Error fetching recommendations.';
       });
     } finally {
       setState(() => _isFetchingRecommendations = false);
@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Error fetching user data: $e');
+      print('fetch user data error');
     }
   }
 
@@ -123,14 +123,18 @@ class _HomePageState extends State<HomePage> {
           lastCookedDishes = data['lastCookedDishes'] ?? lastCookedDishes;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to mark as cooked: ${response.body}')),
+        SnackBarUtils.showCustomSnackBar(
+          context,
+          'Failed to mark as cooked. Please try again.',
+          isSuccess: false,
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
+      SnackBarUtils.showCustomSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error marking as cooked: $e')));
+        'Error marking as cooked. Please try again.',
+        isSuccess: false,
+      );
     }
   }
 
@@ -156,16 +160,18 @@ class _HomePageState extends State<HomePage> {
           favoriteDishes = favoriteDishes.toSet().toList();
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to toggle favorite: ${response.body}'),
-          ),
+        SnackBarUtils.showCustomSnackBar(
+          context,
+          'Failed to toggle favorite. Please try again.',
+          isSuccess: false,
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
+      SnackBarUtils.showCustomSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error toggling favorite: $e')));
+        'Error toggling favorite. Please try again.',
+        isSuccess: false,
+      );
     }
   }
 
@@ -187,20 +193,25 @@ class _HomePageState extends State<HomePage> {
         }
         setState(() {
           lastCookedDishes = data['lastCookedDishes'] ?? [];
-          _showFullHistory = false; // Reset to hide history after clearing
+          _showFullHistory = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cooked history cleared successfully')),
+        SnackBarUtils.showCustomSnackBar(
+          context,
+          'Cooked history cleared successfully',
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to clear history: ${response.body}')),
+        SnackBarUtils.showCustomSnackBar(
+          context,
+          'Failed to clear history. Please try again.',
+          isSuccess: false,
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
+      SnackBarUtils.showCustomSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error clearing history: $e')));
+        'Error clearing history. Please try again.',
+        isSuccess: false,
+      );
     }
   }
 
@@ -225,14 +236,18 @@ class _HomePageState extends State<HomePage> {
           lastCookedDishes = data['lastCookedDishes'] ?? lastCookedDishes;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to remove dish: ${response.body}')),
+        SnackBarUtils.showCustomSnackBar(
+          context,
+          'Failed to remove dish. Please try again.',
+          isSuccess: false,
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
+      SnackBarUtils.showCustomSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error removing dish: $e')));
+        'Error removing dish. Please try again.',
+        isSuccess: false,
+      );
     }
   }
 
@@ -255,12 +270,11 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildHomeContent() {
     final screenWidth = MediaQuery.of(context).size.width;
-    const referenceWidth = 375.0; // Reference width (e.g., iPhone 11)
-    const baseFontSize = 16.0; // Base font size for reference width
+    const referenceWidth = 375.0;
+    const baseFontSize = 16.0;
     final responsiveFontSize = (screenWidth / referenceWidth) * baseFontSize;
-    final fontSize = responsiveFontSize.clamp(12.0, 18.0); // Clamp font size
-    final listTilePadding =
-        screenWidth < 360 ? 6.0 : 8.0; // Adjust ListTile padding
+    final fontSize = responsiveFontSize.clamp(12.0, 18.0);
+    final listTilePadding = screenWidth < 360 ? 6.0 : 8.0;
 
     return BaseAuthScreen(
       headerText: 'Welcome Home',
@@ -301,7 +315,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     onPressed: () {
                       setState(() {
-                        _selectedIndex = 4; // Navigate to Account Settings
+                        _selectedIndex = 4;
                       });
                     },
                     tooltip: 'Account Settings',
