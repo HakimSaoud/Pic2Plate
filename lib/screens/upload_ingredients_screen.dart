@@ -38,7 +38,6 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
       });
 
       try {
-        print('Starting upload for image: ${pickedFile.path}');
         final request = http.MultipartRequest(
           'POST',
           Uri.parse('${BaseAuth.baseUrl}/upload-ingredients'),
@@ -50,18 +49,14 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
           await http.MultipartFile.fromPath('image', pickedFile.path),
         );
 
-        print('Sending request to ${BaseAuth.baseUrl}/upload-ingredients');
         final response = await request.send().timeout(
           const Duration(seconds: 30),
           onTimeout: () {
-            print('Request timed out');
             throw Exception('Request timed out after 30 seconds');
           },
         );
 
-        print('Response status: ${response.statusCode}');
         final responseBody = await response.stream.bytesToString();
-        print('Response body: $responseBody');
 
         final data = jsonDecode(responseBody);
 
@@ -69,11 +64,9 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
           if (data['newAccessToken'] != null &&
               data['newAccessToken'] is String) {
             BaseAuth.updateTokens(accessToken: data['newAccessToken']);
-            print('Updated access token');
           }
           final ingredient = data['ingredient'] ?? 'unknown';
           final confidence = data['confidence'] ?? '0.00';
-          print('Ingredient identified: $ingredient ($confidence%)');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -84,7 +77,6 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
           setState(() => _image = null);
         } else if (response.statusCode == 200) {
           final ingredient = data['ingredient'] ?? 'unknown';
-          print('Ingredient already exists: $ingredient');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(data['message'] ?? 'Ingredient already exists'),
@@ -92,7 +84,6 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
           );
           setState(() => _image = null);
         } else {
-          print('Upload failed with status ${response.statusCode}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -102,12 +93,10 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
           );
         }
       } catch (e) {
-        print('Upload error: $e');
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
       } finally {
-        print('Upload process completed');
         setState(() => _isUploading = false);
       }
     } else {
