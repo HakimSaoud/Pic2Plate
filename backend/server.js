@@ -380,6 +380,32 @@ app.post('/mark-cooked', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/remove-cooked-dish', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Dish name is required' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.lastCookedDishes = user.lastCookedDishes.filter(
+      (dish) => dish.name !== name
+    );
+    await user.save();
+
+    res.status(200).json({
+      message: 'Dish removed from history',
+      lastCookedDishes: user.lastCookedDishes,
+      newAccessToken: req.newAccessToken || null,
+    });
+  } catch (error) {
+    console.error('Remove cooked dish error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 // New endpoint to toggle favorite status
 app.post('/toggle-favorite', authenticateToken, async (req, res) => {
   try {
