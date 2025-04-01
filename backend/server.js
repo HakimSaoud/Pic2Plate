@@ -354,10 +354,19 @@ app.post('/mark-cooked', authenticateToken, async (req, res) => {
       timestamp: new Date(),
     };
 
+    // Remove any existing dish with the same name to avoid duplicates
+    user.lastCookedDishes = user.lastCookedDishes.filter(
+      (dish) => dish.name !== name
+    );
+
+    // Add the new dish
     user.lastCookedDishes.push(cookedDish);
+
+    // Keep only the last 5 dishes
     if (user.lastCookedDishes.length > 5) {
-      user.lastCookedDishes = user.lastCookedDishes.slice(-5); // Keep last 5
+      user.lastCookedDishes = user.lastCookedDishes.slice(-5);
     }
+
     await user.save();
 
     res.status(200).json({

@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> favoriteDishes = [];
   bool _isFetchingRecommendations = false;
   String? _recommendationError;
+  bool _showFullHistory = false;
 
   @override
   void initState() {
