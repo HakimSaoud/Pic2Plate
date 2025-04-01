@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -31,78 +30,68 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
 
   Future<void> _pickAndUploadImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _image = pickedFile;
-        _isUploading = true;
-      });
-
-      try {
-        final request = http.MultipartRequest(
-          'POST',
-          Uri.parse('${BaseAuth.baseUrl}/upload-ingredients'),
-        );
-        request.headers['Authorization'] =
-            'Bearer ${BaseAuth.getAccessToken()}';
-        request.fields['refreshToken'] = BaseAuth.getRefreshToken() ?? '';
-        request.files.add(
-          await http.MultipartFile.fromPath('image', pickedFile.path),
-        );
-
-        final response = await request.send().timeout(
-          const Duration(seconds: 30),
-          onTimeout: () {
-            throw Exception('Request timed out after 30 seconds');
-          },
-        );
-
-        final responseBody = await response.stream.bytesToString();
-
-        final data = jsonDecode(responseBody);
-
-        if (response.statusCode == 201) {
-          if (data['newAccessToken'] != null &&
-              data['newAccessToken'] is String) {
-            BaseAuth.updateTokens(accessToken: data['newAccessToken']);
-          }
-          final ingredient = data['ingredient'] ?? 'unknown';
-          final confidence = data['confidence'] ?? '0.00';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Ingredient identified: $ingredient ($confidence%)',
-              ),
-            ),
-          );
-          setState(() => _image = null);
-        } else if (response.statusCode == 200) {
-          final ingredient = data['ingredient'] ?? 'unknown';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(data['message'] ?? 'Ingredient already exists'),
-            ),
-          );
-          setState(() => _image = null);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Upload failed: ${data['error'] ?? 'Unknown error'}',
-              ),
-            ),
-          );
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
-      } finally {
-        setState(() => _isUploading = false);
-      }
-    } else {
+    if (pickedFile == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('No image selected.')));
+      ).showSnackBar(const SnackBar(content: Text('No image selected')));
+      return;
+    }
+
+    setState(() {
+      _image = pickedFile;
+      _isUploading = true;
+    });
+
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${BaseAuth.baseUrl}/upload-ingredients'),
+      );
+      request.headers['Authorization'] = 'Bearer ${BaseAuth.getAccessToken()}';
+      request.fields['refreshToken'] = BaseAuth.getRefreshToken() ?? '';
+      request.files.add(
+        await http.MultipartFile.fromPath('image', pickedFile.path),
+      );
+
+      final response = await request.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Request timed out'),
+      );
+
+      final responseBody = await response.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+
+      if (response.statusCode == 201) {
+        if (data['newAccessToken'] is String) {
+          BaseAuth.updateTokens(accessToken: data['newAccessToken']);
+        }
+        final ingredient = data['ingredient'] ?? 'unknown';
+        final confidence = data['confidence'] ?? '0.00';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Identified: $ingredient ($confidence%)')),
+        );
+        setState(() => _image = null);
+      } else if (response.statusCode == 200) {
+        final ingredient = data['ingredient'] ?? 'unknown';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$ingredient already exists')));
+        setState(() => _image = null);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Upload failed: ${data['error'] ?? 'Something went wrong'}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Upload failed due to a network issue')),
+      );
+    } finally {
+      setState(() => _isUploading = false);
     }
   }
 
@@ -194,7 +183,7 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF123B42),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10, // Reduced padding
+                        horizontal: 10,
                         vertical: 15,
                       ),
                       shape: RoundedRectangleBorder(
@@ -204,7 +193,7 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10), // Add spacing between buttons
+                const SizedBox(width: 10),
                 Flexible(
                   child: ElevatedButton.icon(
                     onPressed:
@@ -237,7 +226,7 @@ class _UploadIngredientsScreenState extends State<UploadIngredientsScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF123B42),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10, // Reduced padding
+                        horizontal: 10,
                         vertical: 15,
                       ),
                       shape: RoundedRectangleBorder(
