@@ -9,7 +9,7 @@ const path = require('path');
 const { exec } = require('child_process');
 
 const app = express();
-const port = process.PORT || 3000;
+const port = process.env.PORT || 3000;
 
 require('./dbConnect');
 const User = require('./models/userSchema');
@@ -19,14 +19,13 @@ const ACCESS_SECRET_KEY = 'ACCESS_SECRET_KEY';
 const REFRESH_SECRET_KEY = 'REFRESH_SECRET_KEY';
 
 app.use(bodyParser.json());
-
-
 app.use(cors({
   origin: 'http://localhost:55555',
-  credentials: true
+  credentials: true,
 }));
 app.use('/uploads', express.static('uploads'));
 
+// Multer setup for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -39,8 +38,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Ensure the 'uploads' directory exists
 if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
 
+// Middleware to authenticate JWT tokens
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -71,6 +72,7 @@ const authenticateToken = async (req, res, next) => {
   });
 };
 
+// Token generation functions
 const generateAccessToken = (user) => {
   return jwt.sign({ id: user._id, email: user.email }, ACCESS_SECRET_KEY, { expiresIn: '30m' });
 };
@@ -79,33 +81,25 @@ const generateRefreshToken = (user) => {
   return jwt.sign({ id: user._id, email: user.email }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
 };
 
- // Add this at the top with other requires
-
- app.post('/upload-ingredients', authenticateToken, upload.single('image'), async (req, res) => {
+// Upload ingredients image and predict ingredient
+app.post('/upload-ingredients', authenticateToken, upload.single('image'), async (req, res) => {
   try {
-    console.log('Received upload request');
     if (!req.file) {
-      console.log('No file uploaded');
       return res.status(400).json({ error: 'No image uploaded' });
     }
 
-    console.log('File uploaded:', req.file.path);
     const user = await User.findById(req.user.id);
     if (!user) {
-      console.log('User not found:', req.user.id);
       return res.status(404).json({ error: 'User not found' });
     }
 
     const imagePath = req.file.path;
 
     if (!fs.existsSync(imagePath)) {
-      console.error('Uploaded file not found:', imagePath);
       return res.status(500).json({ error: 'Uploaded file not found on server' });
     }
 
     const pythonCommand = `/Users/macbook/miniconda3/bin/python3.12 predict_ingredient.py "${imagePath}"`;
-    console.log('Executing Python command:', pythonCommand);
-
     const execPromise = new Promise((resolve, reject) => {
       exec(pythonCommand, { timeout: 10000 }, (error, stdout, stderr) => {
         if (error) {
@@ -113,8 +107,6 @@ const generateRefreshToken = (user) => {
           console.error('Stderr:', stderr);
           return reject(error);
         }
-        console.log('Stdout:', stdout);
-        console.log('Stderr:', stderr);
         resolve(stdout);
       });
     });
@@ -122,38 +114,24 @@ const generateRefreshToken = (user) => {
     let result;
     try {
       const output = await execPromise;
-      console.log('Python script output:', output);
-      if (!output) {
-        console.log('No output from Python script');
-        return res.status(500).json({ error: 'No prediction result returned' });
-      }
-
       const jsonLine = output.split('\n').find(line => line.trim().startsWith('{') && line.trim().endsWith('}'));
       if (!jsonLine) {
-        console.error('No valid JSON found in output:', output);
         return res.status(500).json({ error: 'No valid JSON in prediction output' });
       }
-
       result = JSON.parse(jsonLine);
-      console.log('Parsed result:', result);
     } catch (err) {
-      console.error('Python execution or parsing error:', err);
       return res.status(500).json({ error: 'Prediction failed', details: err.message });
     }
 
-    const ingredient = result.ingredient.toLowerCase(); // Normalize to lowercase
+    const ingredient = result.ingredient.toLowerCase();
     const confidence = result.confidence;
 
-    // Check for duplicate ingredient
     const existingIngredient = user.ingredientsImages.find(
       item => item.ingredient.toLowerCase() === ingredient
     );
     if (existingIngredient) {
-      console.log(`Ingredient "${ingredient}" already exists in user's list`);
-      // Optionally delete the new uploaded file since it won't be saved
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
-        console.log(`Deleted duplicate image: ${imagePath}`);
       }
       return res.status(200).json({
         message: `Ingredient "${ingredient}" already exists`,
@@ -164,13 +142,9 @@ const generateRefreshToken = (user) => {
       });
     }
 
-    // If no duplicate, proceed to save
-    console.log('Saving to user:', { imagePath, ingredient });
     user.ingredientsImages.push({ imagePath, ingredient });
-    await user.save({ maxTimeMS: 5000 });
-    console.log('User saved successfully');
+    await user.save();
 
-    console.log('Sending response to client');
     res.status(201).json({
       message: 'Image uploaded and ingredient identified successfully',
       imagePath,
@@ -180,12 +154,11 @@ const generateRefreshToken = (user) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Upload endpoint error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
-
+// Get user's ingredients
 app.get('/identify-ingredients', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -197,7 +170,7 @@ app.get('/identify-ingredients', authenticateToken, async (req, res) => {
 
     const ingredients = user.ingredientsImages.map(item => ({
       imagePath: item.imagePath,
-      ingredient: item.ingredient
+      ingredient: item.ingredient,
     }));
 
     res.status(200).json({
@@ -206,16 +179,14 @@ app.get('/identify-ingredients', authenticateToken, async (req, res) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Identify ingredients error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
-
+// Remove an ingredient
 app.post('/remove-ingredient', authenticateToken, async (req, res) => {
   try {
     const { imagePath } = req.body;
-
     if (!imagePath) return res.status(400).json({ error: 'Image path is required' });
 
     const user = await User.findById(req.user.id);
@@ -230,7 +201,6 @@ app.post('/remove-ingredient', authenticateToken, async (req, res) => {
 
     if (removedImagePath && fs.existsSync(removedImagePath)) {
       fs.unlinkSync(removedImagePath);
-      console.log(`Deleted file: ${removedImagePath}`);
     }
 
     res.status(200).json({
@@ -239,15 +209,14 @@ app.post('/remove-ingredient', authenticateToken, async (req, res) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Remove ingredient error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
+// Signup endpoint
 app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -261,18 +230,17 @@ app.post('/signup', async (req, res) => {
 
     res.status(201).json({
       message: 'User created successfully',
-      user: { id: user._id, username: user.username, email: user.email }
+      user: { id: user._id, username: user.username, email: user.email },
     });
   } catch (error) {
-    console.error('Signup error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
+// Signin endpoint
 app.post('/signin', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -288,16 +256,21 @@ app.post('/signin', async (req, res) => {
 
     res.json({
       message: 'Signin successful',
-      user: { id: user._id, username: user.username, email: user.email },
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture, // Include profile picture
+      },
       accessToken,
-      refreshToken
+      refreshToken,
     });
   } catch (error) {
-    console.error('Signin error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
+// Recommend recipes based on user's ingredients
 app.get('/recommend-recipes', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -314,15 +287,17 @@ app.get('/recommend-recipes', authenticateToken, async (req, res) => {
     const userIngredients = user.ingredientsImages.map(item => item.ingredient.toLowerCase());
     const recipes = await Recipe.find();
 
-    const recommendations = recipes.filter(recipe => {
-      const recipeIngredients = recipe.ingredients.map(ing => ing.toLowerCase());
-      return recipeIngredients.some(ing => userIngredients.includes(ing));
-    }).map(recipe => ({
-      name: recipe.name,
-      ingredients: recipe.ingredients,
-      recipe: recipe.recipe,
-      matchedIngredients: recipe.ingredients.filter(ing => userIngredients.includes(ing.toLowerCase())),
-    }));
+    const recommendations = recipes
+      .filter(recipe => {
+        const recipeIngredients = recipe.ingredients.map(ing => ing.toLowerCase());
+        return recipeIngredients.some(ing => userIngredients.includes(ing));
+      })
+      .map(recipe => ({
+        name: recipe.name,
+        ingredients: recipe.ingredients,
+        recipe: recipe.recipe,
+        matchedIngredients: recipe.ingredients.filter(ing => userIngredients.includes(ing.toLowerCase())),
+      }));
 
     res.status(200).json({
       message: 'Recommendations retrieved successfully',
@@ -330,12 +305,11 @@ app.get('/recommend-recipes', authenticateToken, async (req, res) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Recommend recipes error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
-// New endpoint to mark a dish as cooked
+// Mark a dish as cooked
 app.post('/mark-cooked', authenticateToken, async (req, res) => {
   try {
     const { name, ingredients, recipe, matchedIngredients } = req.body;
@@ -354,15 +328,9 @@ app.post('/mark-cooked', authenticateToken, async (req, res) => {
       timestamp: new Date(),
     };
 
-    // Remove any existing dish with the same name to avoid duplicates
-    user.lastCookedDishes = user.lastCookedDishes.filter(
-      (dish) => dish.name !== name
-    );
-
-    // Add the new dish
+    user.lastCookedDishes = user.lastCookedDishes.filter(dish => dish.name !== name);
     user.lastCookedDishes.push(cookedDish);
 
-    // Keep only the last 5 dishes
     if (user.lastCookedDishes.length > 5) {
       user.lastCookedDishes = user.lastCookedDishes.slice(-5);
     }
@@ -375,11 +343,11 @@ app.post('/mark-cooked', authenticateToken, async (req, res) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Mark cooked error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
+// Remove a cooked dish
 app.post('/remove-cooked-dish', authenticateToken, async (req, res) => {
   try {
     const { name } = req.body;
@@ -390,9 +358,7 @@ app.post('/remove-cooked-dish', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    user.lastCookedDishes = user.lastCookedDishes.filter(
-      (dish) => dish.name !== name
-    );
+    user.lastCookedDishes = user.lastCookedDishes.filter(dish => dish.name !== name);
     await user.save();
 
     res.status(200).json({
@@ -401,12 +367,11 @@ app.post('/remove-cooked-dish', authenticateToken, async (req, res) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Remove cooked dish error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
-// New endpoint to toggle favorite status
+// Toggle favorite status of a dish
 app.post('/toggle-favorite', authenticateToken, async (req, res) => {
   try {
     const { name, ingredients, recipe, matchedIngredients } = req.body;
@@ -421,10 +386,8 @@ app.post('/toggle-favorite', authenticateToken, async (req, res) => {
     const isFavorited = user.favoriteDishes.some(fav => fav.name === name);
 
     if (isFavorited) {
-      // Remove if already favorited
       user.favoriteDishes = user.favoriteDishes.filter(fav => fav.name !== name);
     } else {
-      // Add only if not already present (redundant check since we toggle, but ensures no duplicates)
       if (!user.favoriteDishes.some(fav => fav.name === name)) {
         user.favoriteDishes.push(dish);
       }
@@ -437,12 +400,11 @@ app.post('/toggle-favorite', authenticateToken, async (req, res) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Toggle favorite error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
-
+// Refresh token endpoint
 app.post('/refresh', (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -455,17 +417,17 @@ app.post('/refresh', (req, res) => {
       res.json({ accessToken });
     });
   } catch (error) {
-    console.error('Refresh token error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
+// Clear cooked history
 app.post('/clear-cooked-history', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    user.lastCookedDishes = []; // Clear the array
+    user.lastCookedDishes = [];
     await user.save();
 
     res.status(200).json({
@@ -474,29 +436,40 @@ app.post('/clear-cooked-history', authenticateToken, async (req, res) => {
       newAccessToken: req.newAccessToken || null,
     });
   } catch (error) {
-    console.error('Clear cooked history error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
+// Home endpoint (returns user data including profile picture)
 app.get('/home', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user, newAccessToken: req.newAccessToken || null });
+
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture, // Include profile picture
+        lastCookedDishes: user.lastCookedDishes,
+        favoriteDishes: user.favoriteDishes,
+        ingredientsImages: user.ingredientsImages,
+      },
+      newAccessToken: req.newAccessToken || null,
+    });
   } catch (error) {
-    console.error('Home route error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
+// Logout endpoint
 app.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
-
-
-app.put('/update-profile', authenticateToken, async (req, res) => {
+// Update profile endpoint with profile picture upload
+app.put('/update-profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   try {
     const { username, email } = req.body;
     if (!username || !email) {
@@ -508,7 +481,6 @@ app.put('/update-profile', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check if the new email is already taken by another user
     if (email !== user.email) {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
@@ -518,18 +490,32 @@ app.put('/update-profile', authenticateToken, async (req, res) => {
 
     user.username = username;
     user.email = email;
+
+    if (req.file) {
+      // If a new profile picture is uploaded, delete the old one if it exists
+      if (user.profilePicture && fs.existsSync(user.profilePicture)) {
+        fs.unlinkSync(user.profilePicture);
+      }
+      user.profilePicture = `/uploads/${req.file.filename}`;
+    }
+
     await user.save();
 
     res.status(200).json({
       message: 'Profile updated successfully',
       newAccessToken: req.newAccessToken || null,
+      user: {
+        username: user.username,
+        email: user.email,
+        profilePicture: user.profilePicture,
+      },
     });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({ error: 'Server error', details: error.message });
+    res.status(500).json({ error: 'Server error', details: error.messages });
   }
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

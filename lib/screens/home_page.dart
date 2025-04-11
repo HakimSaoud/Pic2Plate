@@ -276,6 +276,8 @@ class _HomePageState extends State<HomePage> {
     final fontSize = responsiveFontSize.clamp(12.0, 18.0);
     final listTilePadding = screenWidth < 360 ? 6.0 : 8.0;
 
+    String? profilePictureUrl = BaseAuth.getProfilePicture();
+
     return BaseAuthScreen(
       headerText: 'Welcome Home',
       child: Padding(
@@ -289,11 +291,20 @@ class _HomePageState extends State<HomePage> {
                   CircleAvatar(
                     radius: screenWidth < 360 ? 16 : 20,
                     backgroundColor: const Color(0xFF123B42),
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: screenWidth < 360 ? 20 : 24,
-                    ),
+                    backgroundImage:
+                        profilePictureUrl != null
+                            ? NetworkImage(
+                              '${BaseAuth.baseUrl}$profilePictureUrl',
+                            )
+                            : null,
+                    child:
+                        profilePictureUrl == null
+                            ? Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: screenWidth < 360 ? 20 : 24,
+                            )
+                            : null,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
