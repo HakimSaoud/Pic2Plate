@@ -10,3 +10,13 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
 - **Profile Management**: Update username, email, and profile picture. Remove your profile picture directly while editing your profile for a fresh start.
 - **Secure Authentication**: Sign up/sign in with JWT-based authentication (30-minute access tokens, 7-day refresh tokens) and bcrypt-hashed passwords.
 - **Responsive UI**: Built with Flutter for a smooth, cross-platform experience with custom visuals like triangle backgrounds and animated snackbars.
+
+## Tech Stack
+
+- **Frontend**: Flutter (Dart) for a responsive, modern UI.
+- **Backend**: Node.js with Express.js, MongoDB for data storage, Mongoose for schema management, and Multer for image uploads.
+- **AI Model**: TensorFlow CNN trained on 54 fruit and vegetable classes, integrated via a Python script (`predict_ingredient.py`).
+- **Security**: JWT for authentication, bcrypt for password hashing, and automatic cleanup of old images using `fs`.
+- **Others**: Child processes for TensorFlow-Node.js integration, data augmentation for robust AI training.
+
+
