@@ -20,3 +20,26 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
 - **Others**: Child processes for TensorFlow-Node.js integration, data augmentation for robust AI training.
 
 
+## Installation
+
+### Prerequisites
+
+- Flutter SDK (v3.0.0 or higher)
+- Node.js (v16 or higher)
+- MongoDB (local or Atlas)
+- Python (v3.8 or higher) with TensorFlow installed
+- Git
+
+
+
+
+
+
+
+
+
+
+
+
+
+
