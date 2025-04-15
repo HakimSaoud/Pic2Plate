@@ -41,6 +41,13 @@ const upload = multer({ storage });
 // Ensure the 'uploads' directory exists
 if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
 
+
+
+
+
+
+
+
 // Middleware to authenticate JWT tokens
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -59,7 +66,7 @@ const authenticateToken = async (req, res, next) => {
         const newAccessToken = jwt.sign(
           { id: decoded.id, email: decoded.email },
           ACCESS_SECRET_KEY,
-          { expiresIn: '15d' }
+          { expiresIn: '15m' }
         );
         req.user = decoded;
         req.newAccessToken = newAccessToken;

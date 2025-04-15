@@ -1,5 +1,3 @@
 # Pic2Plate
 
-A new Flutter project.
-
-Wait for it 
+CookSmart is a Flutter-based mobile application designed to simplify meal planning by leveraging AI-driven ingredient recognition and personalized recipe recommendations. Built with a robust tech stack including **Flutter**, **MongoDB**, **Express.js**, **Node.js**, and **TensorFlow**, CookSmart empowers users to identify ingredients, discover recipes, track cooking history, and manage their profiles securely.
