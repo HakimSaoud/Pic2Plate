@@ -35,5 +35,10 @@ def predict_ingredient(img_path):
 if __name__ == "__main__":
     img_path = sys.argv[1]
     ingredient, confidence = predict_ingredient(img_path)
-    result = {"ingredient": ingredient, "confidence": float(confidence)}
+    if confidence>85:
+            result = {"ingredient": ingredient, "confidence": float(confidence)}
+    else :
+            result = {"ingredient": 'unkown', "confidence": 0.0}
+    
+
     print(json.dumps(result))

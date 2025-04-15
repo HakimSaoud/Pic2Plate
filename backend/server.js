@@ -467,11 +467,9 @@ app.get('/home', authenticateToken, async (req, res) => {
 app.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
-
-// Update profile endpoint with profile picture upload
 app.put('/update-profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, removeProfilePicture } = req.body;
     if (!username || !email) {
       return res.status(400).json({ error: 'Username and email are required' });
     }
@@ -491,10 +489,16 @@ app.put('/update-profile', authenticateToken, upload.single('profilePicture'), a
     user.username = username;
     user.email = email;
 
-    if (req.file) {
-      // If a new profile picture is uploaded, delete the old one if it exists
+    if (removeProfilePicture === 'true') {
+      // Remove profile picture
       if (user.profilePicture && fs.existsSync(user.profilePicture)) {
-        fs.unlinkSync(user.profilePicture);
+        fs.unlinkSync(user.profilePicture); // Delete the image file
+      }
+      user.profilePicture = null; // Set to null in the database
+    } else if (req.file) {
+      // Handle new profile picture upload
+      if (user.profilePicture && fs.existsSync(user.profilePicture)) {
+        fs.unlinkSync(user.profilePicture); // Delete old image
       }
       user.profilePicture = `/uploads/${req.file.filename}`;
     }
@@ -511,7 +515,7 @@ app.put('/update-profile', authenticateToken, upload.single('profilePicture'), a
       },
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error', details: error.messages });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
