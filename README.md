@@ -19,7 +19,6 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
 - **Security**: JWT for authentication, bcrypt for password hashing, and automatic cleanup of old images using `fs`.
 - **Others**: Child processes for TensorFlow-Node.js integration, data augmentation for robust AI training.
 
-
 ## Installation
 
 ### Prerequisites
@@ -29,17 +28,3 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
 - MongoDB (local or Atlas)
 - Python (v3.8 or higher) with TensorFlow installed
 - Git
-
-
-
-
-
-
-
-
-
-
-
-
-
-
