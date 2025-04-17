@@ -96,3 +96,11 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
      ```bash
      flutter run
      ```
+## Usage
+
+1. **Sign Up/Sign In**: Create an account or log in to access the app.
+2. **Add Ingredients**: Upload photos of ingredients via the “Add Ingredients” screen to build your inventory.
+3. **Get Recommendations**: Tap “Get a Recommendation” or visit the “Recommendations” tab to find recipes matching your ingredients.
+4. **Track Cooking**: Mark dishes as cooked, save favorites, or remove them from your history.
+5. **Manage Profile**: Update your username, email, or profile picture. In edit mode, remove your profile picture if desired.
+6. **Logout**: Securely log out to end your session.
