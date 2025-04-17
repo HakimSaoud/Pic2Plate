@@ -133,3 +133,24 @@ cooksmart/
 └── ...
 ```
 
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/your-feature`).
+3. Commit your changes (`git commit -m 'Add your feature'`).
+4. Push to the branch (`git push origin feature/your-feature`).
+5. Open a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+For questions or feedback, reach out via your.email@example.com or open an issue on GitHub.
+
+Happy cooking with CookSmart! 🍽️
+
+
