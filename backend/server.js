@@ -149,8 +149,13 @@ app.post('/upload-ingredients', authenticateToken, upload.single('image'), async
       });
     }
 
-    user.ingredientsImages.push({ imagePath, ingredient });
-    await user.save();
+    if (ingredient == 'unkown'){
+      return res.status(500).json({ error: 'Prediction unkown', details: err.message });
+    }
+    else{
+      user.ingredientsImages.push({ imagePath, ingredient });
+      await user.save();
+    }
 
     res.status(201).json({
       message: 'Image uploaded and ingredient identified successfully',

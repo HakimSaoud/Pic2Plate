@@ -309,7 +309,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      BaseAuth.getUsername() ?? 'User',
+                      'Hey, ${BaseAuth.getUsername() ?? 'User'}',
                       style: TextStyle(
                         fontSize: fontSize,
                         fontWeight: FontWeight.bold,
