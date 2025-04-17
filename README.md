@@ -104,3 +104,32 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
 4. **Track Cooking**: Mark dishes as cooked, save favorites, or remove them from your history.
 5. **Manage Profile**: Update your username, email, or profile picture. In edit mode, remove your profile picture if desired.
 6. **Logout**: Securely log out to end your session.
+
+## AI Model Details
+
+- **Model**: Convolutional Neural Network (CNN) built with TensorFlow.
+- **Classes**: Trained on 54 fruit and vegetable categories (e.g., broccoli, tomato, zucchini).
+- **Training**: Used a diverse dataset with augmentation (rotations, flips) for robustness across lighting and angles.
+- **Inference**: Processes images via `predict_ingredient.py`, returning the top class and confidence score (e.g., “cucumber, 93.2%”).
+- **Integration**: Called by the Node.js backend using child processes, results are sent to the Flutter frontend.
+
+## Project Structure
+
+```
+cooksmart/
+├── backend/                    # Node.js/Express backend
+│   ├── model/                  # TensorFlow model files
+│   ├── uploads/                # Stored images
+│   ├── app.js                  # Main server file
+│   ├── predict_ingredient.py   # AI prediction script
+│   └── ...
+├── frontend/                   # Flutter frontend
+│   ├── lib/                    # Dart source code
+│   │   ├── components/         # Reusable widgets
+│   │   ├── screens/            # App screens
+│   │   └── main.dart           # Entry point
+│   └── pubspec.yaml            # Flutter dependencies
+├── README.md                   # This file
+└── ...
+```
+
