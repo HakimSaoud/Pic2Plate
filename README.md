@@ -28,3 +28,38 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
 - MongoDB (local or Atlas)
 - Python (v3.8 or higher) with TensorFlow installed
 - Git
+
+### Steps
+
+1. **Clone the Repository**:
+
+   ```bash
+   git clone https://github.com/yourusername/cooksmart.git
+   cd cooksmart
+   ```
+
+
+   2. **Backend Setup**:
+
+   - Navigate to the backend directory:
+
+     ```bash
+     cd backend
+     ```
+   - Install dependencies:
+
+     ```bash
+     npm install
+     ```
+   - Create a `.env` file with the following:
+
+     ```env
+     MONGODB_URI=your_mongodb_connection_string
+     JWT_SECRET=your_jwt_secret
+     JWT_REFRESH_SECRET=your_refresh_secret
+     ```
+   - Start the backend server:
+
+     ```bash
+     npm start
+     ```
