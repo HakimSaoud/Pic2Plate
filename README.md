@@ -149,7 +149,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-For questions or feedback, reach out via your.email@example.com or open an issue on GitHub.
+For questions or feedback, reach out via 50655hakim@gmail.com or open an issue on GitHub.
 
 Happy cooking with CookSmart! 🍽️
 
