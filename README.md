@@ -63,3 +63,13 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
      ```bash
      npm start
      ```
+
+3. **AI Model Setup**:
+
+   - Ensure TensorFlow is installed:
+
+     ```bash
+     pip install tensorflow
+     ```
+   - Place the trained model (`model.h5`) in the backend’s `/model` directory.
+   - Update `predict_ingredient.py` to point to the model path if needed.
