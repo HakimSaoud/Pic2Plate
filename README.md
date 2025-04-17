@@ -73,3 +73,26 @@ CookSmart is a Flutter-based mobile application designed to simplify meal planni
      ```
    - Place the trained model (`model.h5`) in the backend’s `/model` directory.
    - Update `predict_ingredient.py` to point to the model path if needed.
+
+4. **Frontend Setup**:
+
+   - Navigate to the frontend directory:
+
+     ```bash
+     cd frontend
+     ```
+   - Install Flutter dependencies:
+
+     ```bash
+     flutter pub get
+     ```
+   - Update `lib/components/base_auth.dart` with your backend URL:
+
+     ```dart
+     static const String baseUrl = 'http://your-backend-url:3000';
+     ```
+   - Run the Flutter app:
+
+     ```bash
+     flutter run
+     ```
